@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Home | Interview Confidence Analyzer</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+
+        .header {
+            background: linear-gradient(90deg, #2193b0, #6dd5ed);
+            color: white;
+            padding: 60px 20px;
+            text-align: center;
+        }
+
+        .results-section, .profile-card {
+            background-color: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+        }
+
+        #loadingMessage {
+            font-weight: 500;
+        }
+
+        .profile-card h5 {
+            font-weight: bold;
+        }
+
+        .profile-card span {
+            font-size: 0.95rem;
+            color: #555;
+        }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <h1 class="display-5 fw-bold">AI-Based Interview Confidence Analyzer</h1>
+    <p class="lead">Upload your interview video to receive AI-driven insights on your confidence level, expressions, and communication style.</p>
+</div>
+
+<div class="container mt-5">
+
+    <!-- Profile Information -->
+    <div class="profile-card mb-5">
+        <div class="row">
+            <div class="col-md-8">
+                <h5>👤 Candidate Profile</h5>
+                <p><strong>Name:</strong> <span id="userName">John Doe</span></p>
+                <p><strong>Email:</strong> <span id="userEmail">johndoe@example.com</span></p>
+                <p><strong>Role:</strong> <span id="userRole">Candidate</span></p>
+                <p><strong>Last Login:</strong> <span id="userLogin">20-Apr-2025 10:30 AM</span></p>
+            </div>
+            <div class="col-md-4 text-end">
+                <img src="https://cdn-icons-png.flaticon.com/512/219/219983.png" alt="Profile" width="80" class="rounded-circle">
+            </div>
+        </div>
+    </div>
+
+    <!-- Upload Form -->
+    <div class="text-center mb-4">
+        <h2 class="mb-3">📤 Upload Your Interview Video</h2>
+        <form id="uploadForm" enctype="multipart/form-data" class="mx-auto" style="max-width: 500px;">
+            <div class="mb-3">
+                <input type="file" class="form-control" id="videoFile" name="videoFile" accept="video/*" required>
+            </div>
+            <button type="submit" class="btn btn-primary w-100">Analyze My Interview</button>
+        </form>
+        <div id="loadingMessage" class="mt-3 text-primary" style="display: none;">
+            <div class="spinner-border text-primary" role="status"></div>
+            <p>Processing your video, please wait...</p>
+        </div>
+    </div>
+
+    <!-- Results -->
+    <div id="results" class="results-section mt-5" style="display: none;">
+        <h3 class="mb-4 text-center">📋 Your Confidence Analysis</h3>
+        <table class="table table-bordered text-center">
+            <thead class="table-light">
+                <tr>
+                    <th>Aspect</th>
+                    <th>Confidence (%)</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Facial Expressions</td>
+                    <td id="expression-confidence"></td>
+                </tr>
+                <tr>
+                    <td>Eye Movement</td>
+                    <td id="eye-confidence"></td>
+                </tr>
+                <tr>
+                    <td>Speech Analysis</td>
+                    <td id="speech-confidence"></td>
+                </tr>
+                <tr>
+                    <td>Hand Gestures</td>
+                    <td id="hand-confidence"></td>
+                </tr>
+            </tbody>
+        </table>
+        <h4 class="text-center mt-4">🧠 Overall Confidence Score: <span id="overall-confidence"></span>%</h4>
+    </div>
+
+    <!-- Expression Breakdown -->
+    <div id="expressionCounts" class="results-section mt-5" style="display: none;">
+        <h4 class="mb-3">😐 Facial Expression Breakdown</h4>
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Expression</th>
+                    <th>Occurrences</th>
+                </tr>
+            </thead>
+            <tbody id="expression-counts-body">
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    document.getElementById("uploadForm").addEventListener("submit", function(event) {
+        event.preventDefault();
+
+        let formData = new FormData();
+        let fileInput = document.getElementById("videoFile");
+        formData.append("video", fileInput.files[0]);
+
+        document.getElementById("loadingMessage").style.display = "block";
+        document.getElementById("results").style.display = "none";
+
+        fetch("upload_video", {
+            method: "POST",
+            body: formData
+        }).then(response => response.json())
+        .then(data => {
+            document.getElementById("loadingMessage").style.display = "none";
+            document.getElementById("results").style.display = "block";
+
+            document.getElementById("expression-confidence").innerText = data.confidence_result.expression_confidence.toFixed(2) + "%";
+            document.getElementById("eye-confidence").innerText = data.confidence_result.eye_movement_confidence.toFixed(2) + "%";
+            document.getElementById("speech-confidence").innerText = data.confidence_result.speech_confidence.toFixed(2) + "%";
+            document.getElementById("hand-confidence").innerText = data.confidence_result.hand_gesture_confidence.toFixed(2) + "%";
+            document.getElementById("overall-confidence").innerText = data.confidence_result.overall_confidence.toFixed(2);
+
+            let expressionTable = document.getElementById("expression-counts-body");
+            expressionTable.innerHTML = "";
+            let expressionData = data.expression_counts;
+
+            for (let exp in expressionData) {
+                let row = `<tr><td>${exp}</td><td>${expressionData[exp]}</td></tr>`;
+                expressionTable.innerHTML += row;
+            }
+            document.getElementById("expressionCounts").style.display = "block";
+        }).catch(error => {
+            document.getElementById("loadingMessage").style.display = "none";
+            alert("Error processing video. Please try again.");
+            console.error(error);
+        });
+    });
+</script>
+
+</body>
+</html>
