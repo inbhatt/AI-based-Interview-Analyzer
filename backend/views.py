@@ -229,6 +229,15 @@ def analyze_speech(video_path):
 def home(request: HttpRequest):
     return render(request, 'home.html')
 
+def admin_panel(request):
+    return render(request, 'admin.html')
+
+def history(request):
+    return render(request, 'history.html')
+
+def report(request):
+    return render(request, 'report.html')
+
 def format_time(dt):
     """Format datetime to 'dd-MM-yy HH:mm:ss' format."""
     return dt.strftime("%d-%m-%y %H:%M:%S")
