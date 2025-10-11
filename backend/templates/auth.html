@@ -15,7 +15,6 @@
             justify-content: center;
             font-family: 'Segoe UI', sans-serif;
         }
-
         .auth-box {
             background: #ffffff;
             padding: 40px;
@@ -24,19 +23,15 @@
             width: 100%;
             max-width: 450px;
         }
-
         .toggle-tabs button {
             width: 50%;
         }
-
         .form-section {
             display: none;
         }
-
         .form-section.active {
             display: block;
         }
-
         .form-control:focus {
             border-color: #2193b0;
             box-shadow: 0 0 0 0.2rem rgba(33, 147, 176, 0.25);
@@ -50,6 +45,7 @@
             <p class="text-muted">Secure Login / Signup</p>
         </div>
 
+        <!-- Toggle -->
         <div class="toggle-tabs btn-group mb-4" role="group">
             <button type="button" class="btn btn-outline-primary active" id="loginTab">Login</button>
             <button type="button" class="btn btn-outline-primary" id="signupTab">Signup</button>
@@ -57,18 +53,19 @@
 
         <!-- Login Form -->
         <div id="loginForm" class="form-section active">
-            <form>
+            <form method="POST" action="{% url 'login' %}">
+                {% csrf_token %}
                 <div class="mb-3">
                     <label for="loginEmail" class="form-label">Email address</label>
-                    <input type="email" class="form-control" id="loginEmail" required>
+                    <input type="email" class="form-control" id="loginEmail" name="email" required>
                 </div>
                 <div class="mb-3">
                     <label for="loginPassword" class="form-label">Password</label>
-                    <input type="password" class="form-control" id="loginPassword" required>
+                    <input type="password" class="form-control" id="loginPassword" name="password" required>
                 </div>
                 <div class="mb-3">
                     <label for="loginRole" class="form-label">Login as</label>
-                    <select class="form-select" id="loginRole">
+                    <select class="form-select" id="loginRole" name="role">
                         <option value="candidate">Candidate</option>
                         <option value="admin">Admin</option>
                     </select>
@@ -79,22 +76,23 @@
 
         <!-- Signup Form -->
         <div id="signupForm" class="form-section">
-            <form>
+            <form method="POST" action="{% url 'signup' %}">
+                {% csrf_token %}
                 <div class="mb-3">
                     <label for="signupName" class="form-label">Full Name</label>
-                    <input type="text" class="form-control" id="signupName" required>
+                    <input type="text" class="form-control" id="signupName" name="name" required>
                 </div>
                 <div class="mb-3">
                     <label for="signupEmail" class="form-label">Email address</label>
-                    <input type="email" class="form-control" id="signupEmail" required>
+                    <input type="email" class="form-control" id="signupEmail" name="email" required>
                 </div>
                 <div class="mb-3">
                     <label for="signupPassword" class="form-label">Password</label>
-                    <input type="password" class="form-control" id="signupPassword" required>
+                    <input type="password" class="form-control" id="signupPassword" name="password" required>
                 </div>
                 <div class="mb-3">
                     <label for="signupRole" class="form-label">Register as</label>
-                    <select class="form-select" id="signupRole">
+                    <select class="form-select" id="signupRole" name="role">
                         <option value="candidate">Candidate</option>
                         <option value="admin">Admin</option>
                     </select>

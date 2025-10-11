@@ -13,8 +13,75 @@ from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
 from datetime import datetime
 from django.db.models import Avg
-from .models import Expression, Eyes, HandsExpression, Speech
+from .models import Expression, Eyes, HandsExpression, Speech, User
 import glob
+from .forms import ProfileUpdateForm
+
+
+
+from django.shortcuts import render, redirect
+from django.contrib.auth import authenticate, login, logout
+from django.contrib import messages
+from .models import User
+
+def signup_view(request):
+    if request.method == "POST":
+        name = request.POST.get("name")
+        email = request.POST.get("email")
+        password = request.POST.get("password")
+        role = request.POST.get("role")
+
+        if User.objects.filter(email=email).exists():
+            messages.error(request, "Email already registered!")
+        else:
+            user = User.objects.create_user(email=email, name=name, role=role, password=password)
+            messages.success(request, "Signup successful! Please login.")
+            return redirect("login")
+
+    return render(request, "auth.html")
+
+
+def login_view(request):
+    if request.method == "POST":
+        email = request.POST.get("email")
+        password = request.POST.get("password")
+        role = request.POST.get("role")
+
+        user = authenticate(request, email=email, password=password)
+
+        if user is not None and user.role == role:
+            login(request, user)
+            return redirect("home")  # redirect to dashboard/home
+        else:
+            messages.error(request, "Invalid credentials or role mismatch!")
+
+    return render(request, "auth.html")
+
+
+def logout_view(request):
+    logout(request)
+    return redirect("login")
+
+
+
+
+def candidate_profile(request):
+    user = request.user
+
+    if request.method == 'POST':
+        form = ProfileUpdateForm(request.POST, request.FILES, instance=user)
+        if form.is_valid():
+            form.save()
+            return redirect('home')  # redirect to home after saving
+    else:
+        form = ProfileUpdateForm(instance=user)
+
+    context = {
+        'user': user,
+        'form': form
+    }
+    return render(request, 'admin.html', context)
+
 
 # Load NLP data
 nltk.download("punkt")
@@ -226,8 +293,14 @@ def analyze_speech(video_path):
         return 100  # Default full confidence if speech cannot be analyzed.
 
 
-def home(request: HttpRequest):
-    return render(request, 'home.html')
+def home(request):
+    user = request.user
+    return render(request, 'home.html', {'user': user})
+
+
+
+def auth(request: HttpRequest):
+    return render(request, 'auth.html')
 
 def format_time(dt):
     """Format datetime to 'dd-MM-yy HH:mm:ss' format."""

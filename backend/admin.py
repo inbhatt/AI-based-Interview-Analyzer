@@ -1,3 +1,8 @@
 from django.contrib import admin
+from .models import User, Expression, Eyes, HandsExpression, Speech
 
-# Register your models here.
+admin.site.register(User)
+admin.site.register(Expression)
+admin.site.register(Eyes)
+admin.site.register(HandsExpression)
+admin.site.register(Speech)
