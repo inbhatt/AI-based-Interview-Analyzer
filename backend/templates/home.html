@@ -87,6 +87,8 @@
 
     <!-- Upload Form -->
     <div class="text-center mb-4">
+        {% csrf_token %}
+
         <h2 class="mb-3">📤 Upload Your Interview Video</h2>
         <form id="uploadForm" enctype="multipart/form-data" class="mx-auto" style="max-width: 500px;">
             <div class="mb-3">

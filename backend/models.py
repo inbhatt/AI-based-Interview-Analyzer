@@ -1,6 +1,7 @@
 # backend/models.py
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, BaseUserManager
+from django.utils import timezone
 
 
 class UserManager(BaseUserManager):
@@ -33,7 +34,7 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     email = models.EmailField(unique=True)
     name = models.CharField(max_length=255)
-    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default="candidate")
+    role = models.CharField(max_length=50, default='candidate', null=True, blank=True)
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)  # Required for admin access
 
@@ -43,7 +44,7 @@ class User(AbstractBaseUser, PermissionsMixin):
         default='profile_pics/default.png', 
         blank=True
     )
-    
+
     objects = UserManager()
 
     USERNAME_FIELD = "email"
@@ -84,3 +85,18 @@ class Speech(models.Model):
 
     def __str__(self):
         return f"{self.word} ({self.percentage}%)"
+
+
+
+class CandidateRecord(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    video_name = models.CharField(max_length=255)  
+    expression_confidence = models.FloatField()
+    eye_movement_confidence = models.FloatField()
+    speech_confidence = models.FloatField()
+    hand_gesture_confidence = models.FloatField()
+    overall_confidence = models.FloatField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    date_time = models.DateTimeField(default=timezone.now)  # <-- Add this
+    def __str__(self):
+        return f"{self.user.email} -  {self.video_name} -{self.created_at.strftime('%Y-%m-%d %H:%M')}"
