@@ -1,3 +1,5 @@
+{% load static %}
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -48,23 +50,45 @@
 <div class="container mt-5">
 
     <!-- Profile Information -->
-    <div class="profile-card mb-5">
-        <div class="row">
-            <div class="col-md-8">
-                <h5>👤 Candidate Profile</h5>
-                <p><strong>Name:</strong> <span id="userName">John Doe</span></p>
-                <p><strong>Email:</strong> <span id="userEmail">johndoe@example.com</span></p>
-                <p><strong>Role:</strong> <span id="userRole">Candidate</span></p>
-                <p><strong>Last Login:</strong> <span id="userLogin">20-Apr-2025 10:30 AM</span></p>
-            </div>
-            <div class="col-md-4 text-end">
-                <img src="https://cdn-icons-png.flaticon.com/512/219/219983.png" alt="Profile" width="80" class="rounded-circle">
-            </div>
+    <!-- Profile Information -->
+<div class="profile-card mb-5">
+    <div class="row align-items-center">
+        <!-- Left Column: User Info + Edit Button -->
+        <div class="col-md-8">
+            <h5>👤 Candidate Profile</h5>
+            <p><strong>Name:</strong> <span id="userName">{{ user.name }}</span></p>
+            <p><strong>Email:</strong> <span id="userEmail">{{ user.email }}</span></p>
+            <p><strong>Role:</strong> <span id="userRole">{{ user.role|capfirst }}</span></p>
+            <p><strong>Last Login:</strong> <span id="userLogin">{{ user.last_login|date:"d-M-Y h:i A" }}</span></p>
+            
+            <!-- Edit Button below info -->
+            <a href="{% url 'candidate_profile' %}" class="btn btn-sm btn-outline-primary mt-3">Edit Full Profile</a>
+        </div>
+
+        <!-- Right Column: Profile Image -->
+        <div class="col-md-4 text-end">
+            <img 
+                src="{% if user.profile_image and user.profile_image.name %}{{ user.profile_image.url }}{% else %}{% static 'images/rahul.jpg' %}{% endif %}" 
+                class="rounded-circle" 
+                width="80" 
+                height="80"
+                style="object-fit: cover;"
+                alt="Profile Image"
+            >
+        </div>
+
+
+
+
         </div>
     </div>
+</div>
+
 
     <!-- Upload Form -->
     <div class="text-center mb-4">
+        {% csrf_token %}
+
         <h2 class="mb-3">📤 Upload Your Interview Video</h2>
         <form id="uploadForm" enctype="multipart/form-data" class="mx-auto" style="max-width: 500px;">
             <div class="mb-3">
