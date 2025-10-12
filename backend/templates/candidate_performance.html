@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ candidate.name }} Performance | Admin</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .performance-container { padding: 40px; }
+        .result-card { margin-bottom: 20px; box-shadow: 0 4px 8px rgba(0,0,0,0.05); }
+        .score-badge { font-size: 1.1rem; padding: 0.5em 1em; }
+    </style>
+</head>
+<body>
+    
+    <nav class="navbar navbar-expand-lg navbar-dark" style="background-color: #2193b0;">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="{% url 'admin_dashboard' %}">Admin Dashboard</a>
+            <div class="collapse navbar-collapse justify-content-end">
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'logout' %}">Logout</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+    <div class="container performance-container">
+        <a href="{% url 'admin_dashboard' %}" class="btn btn-secondary mb-4">&larr; Back to Dashboard</a>
+        
+        <h1 class="mb-4">Performance Report for: **{{ candidate.name }}**</h1>
+        <p class="lead">Email: {{ candidate.email }}</p>
+
+        <h2 class="mt-5 mb-3">Analysis History</h2>
+
+        {% if analysis_results %}
+            <div class="row">
+            {% for result in analysis_results %}
+                <div class="col-md-6">
+                    <div class="card result-card">
+                        <div class="card-header bg-light">
+                            **Analysis Run on:** {{ result.date_time|date:"F d, Y P" }}
+                        </div>
+                        <div class="card-body">
+                            <p class="card-text">
+                                **Overall Confidence:** <span class="badge bg-primary score-badge">{{ result.overall_confidence|floatformat:2 }}%</span>
+                            </p>
+                            <hr>
+                            
+                            <h5>Aspect Scores:</h5>
+                            <ul class="list-unstyled">
+                                <li>**Facial Expression:** {{ result.expression_confidence|floatformat:2 }}%</li>
+                                <li>**Eye Movement:** {{ result.eye_movement_confidence|floatformat:2 }}%</li>
+                                <li>**Speech:** {{ result.speech_confidence|floatformat:2 }}%</li>
+                                <li>**Hand Gesture:** {{ result.hand_gesture_confidence|floatformat:2 }}%</li>
+                            </ul>
+                            
+                            <hr>
+
+                            <h5>Expression Duration (Seconds):</h5>
+                            <ul class="list-unstyled small">
+                            {% with expressions=result.get_detailed_results.expression_seconds %}
+                                {% for expr, duration in expressions.items %}
+                                    <li>{{ expr|title }}: **{{ duration }}s**</li>
+                                {% empty %}
+                                    <li>No expression data recorded.</li>
+                                {% endfor %}
+                            {% endwith %}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+            </div>
+        {% else %}
+            <div class="alert alert-warning">
+                No analysis results found for this candidate.
+            </div>
+        {% endif %}
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

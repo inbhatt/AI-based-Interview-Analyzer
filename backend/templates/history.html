@@ -1,44 +1,83 @@
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>My History | Interview Analyzer</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>My Performance History</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        body { background-color: #f8f9fa; }
-        .section { background: white; border-radius: 20px; padding: 30px; box-shadow: 0 10px 25px rgba(0,0,0,0.08); margin-top: 30px; }
+        .history-container { padding: 40px; }
+        .result-card { margin-bottom: 25px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); border-radius: 10px; }
+        .score-badge { font-size: 1.1rem; padding: 0.5em 1em; }
+        .header-bg { background: linear-gradient(90deg, #2193b0, #6dd5ed); color: white; }
     </style>
 </head>
 <body>
-<div class="container">
-    <div class="text-center my-5">
-        <h2>📁 My Analysis History</h2>
-        <p class="text-muted">Track your past performance and progress over time.</p>
+    
+    <nav class="navbar navbar-expand-lg navbar-dark header-bg">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="{% url 'home' %}">Home</a>
+            <div class="collapse navbar-collapse justify-content-end">
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="{% url 'candidate_history' %}">History Tracker</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'logout' %}">Logout</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+    <div class="container history-container">
+        <h1 class="mb-4">My Interview Performance History</h1>
+        <p class="lead">Viewing results for: **{{ candidate.name }}**</p>
+
+        {% if analysis_results %}
+            <div class="row">
+            {% for result in analysis_results %}
+                <div class="col-md-12">
+                    <div class="card result-card">
+                        <div class="card-header header-bg">
+                            **Analysis Run on:** {{ result.date_time|date:"F d, Y P" }}
+                            <span class="float-end">Overall Score: <span class="badge bg-light text-dark score-badge">{{ result.overall_confidence|floatformat:2 }}%</span></span>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h5>Component Scores:</h5>
+                                    <ul class="list-unstyled">
+                                        <li>**Facial Expression:** <span class="badge bg-info">{{ result.expression_confidence|floatformat:2 }}%</span></li>
+                                        <li>**Eye Movement:** <span class="badge bg-info">{{ result.eye_movement_confidence|floatformat:2 }}%</span></li>
+                                        <li>**Speech:** <span class="badge bg-info">{{ result.speech_confidence|floatformat:2 }}%</span></li>
+                                        <li>**Hand Gesture:** <span class="badge bg-info">{{ result.hand_gesture_confidence|floatformat:2 }}%</span></li>
+                                    </ul>
+                                </div>
+                                <div class="col-md-6">
+                                    <h5>Detailed Expression Duration (Seconds):</h5>
+                                    <ul class="list-unstyled small">
+                                    {% with expressions=result.get_detailed_results.expression_seconds %}
+                                        {% for expr, duration in expressions.items %}
+                                            <li>{{ expr|title }}: **{{ duration }}s**</li>
+                                        {% empty %}
+                                            <li>No detailed expression data recorded.</li>
+                                        {% endfor %}
+                                    {% endwith %}
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+            </div>
+        {% else %}
+            <div class="alert alert-info mt-5">
+                You have not submitted any videos for analysis yet.
+                <a href="{% url 'home' %}" class="alert-link">Go back to the home page</a> to upload your first video.
+            </div>
+        {% endif %}
     </div>
 
-    <div class="section">
-        <table class="table table-bordered text-center">
-            <thead class="table-light">
-                <tr>
-                    <th>Date</th>
-                    <th>Overall Confidence</th>
-                    <th>Download Report</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td>20-Apr-2025</td>
-                    <td>78.5%</td>
-                    <td><button class="btn btn-outline-secondary btn-sm">PDF</button></td>
-                </tr>
-                <tr>
-                    <td>18-Apr-2025</td>
-                    <td>70.1%</td>
-                    <td><button class="btn btn-outline-secondary btn-sm">PDF</button></td>
-                </tr>
-            </tbody>
-        </table>
-    </div>
-</div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

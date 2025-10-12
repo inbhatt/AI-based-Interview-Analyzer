@@ -43,21 +43,28 @@
 
 <!-- 🔹 Navigation Bar -->
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-  <div class="container">
-    <a class="navbar-brand fw-bold" href="index.html">Interview Analyzer</a>
-    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-      <span class="navbar-toggler-icon"></span>
-    </button>
-    <div class="collapse navbar-collapse" id="navbarNav">
-      <ul class="navbar-nav ms-auto">
-        <li class="nav-item"><a class="nav-link active" href="index.html">Home</a></li>
-        <li class="nav-item"><a class="nav-link" href="admin.html">Admin Panel</a></li>
-        <li class="nav-item"><a class="nav-link" href="history.html">History Tracker</a></li>
-        <li class="nav-item"><a class="nav-link" href="report.html">Report Generator</a></li>
-      </ul>
-    </div>
-  </div>
-</nav>
+      <div class="container">
+        <a class="navbar-brand fw-bold" href="index.html">Interview Analyzer</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+          <ul class="navbar-nav ms-auto">
+            <li class="nav-item"><a class="nav-link active" href="index.html">Home</a></li>
+            {% if request.session.user_role == 'admin' %}
+                <a class="nav-link" href="{% url 'admin_dashboard' %}">Admin Dashboard</a> 
+            {% endif %}
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'candidate_history' %}">History Tracker</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'report_generator_self' %}">Report Generator</a>
+            </li>
+            <li class="nav-item"><a class="nav-link btn btn-danger btn-sm ms-2 text-white" href="{% url 'logout' %}">Logout</a></li> </ul>
+        </div>
+      </div>
+    </nav>
+   
 <!-- 🔹 End Navigation Bar -->
  
 
@@ -69,19 +76,16 @@
 <div class="container mt-5">
 
     <!-- Profile Information -->
-    <div class="profile-card mb-5">
+     <div class="profile-card mb-5">
         <div class="row">
             <div class="col-md-8">
-                <h5>👤 Candidate Profile</h5>
-                <p><strong>Name:</strong> <span id="userName">John Doe</span></p>
-                <p><strong>Email:</strong> <span id="userEmail">johndoe@example.com</span></p>
-                <p><strong>Role:</strong> <span id="userRole">Candidate</span></p>
-                <p><strong>Last Login:</strong> <span id="userLogin">20-Apr-2025 10:30 AM</span></p>
+                <h5>Candidate Profile</h5>
+                <p><strong>Name:</strong> <span id="userName">{{ request.session.user_name|default:"Guest" }}</span></p>
+                <p><strong>Email:</strong> <span id="userEmail">{{ request.session.user_email|default:"Not Logged In" }}</span></p>
+                <p><strong>Role:</strong> <span id="userRole">{{ request.session.user_role|default:"N/A" }}</span></p>
+                <p><strong>Last Login:</strong> <span id="userLogin">{% now "d-M-Y H:i A" %}</span></p>
             </div>
-            <div class="col-md-4 text-end">
-                <img src="https://cdn-icons-png.flaticon.com/512/219/219983.png" alt="Profile" width="80" class="rounded-circle">
             </div>
-        </div>
     </div>
 
     <!-- Upload Form -->
@@ -174,10 +178,12 @@
 
             let expressionTable = document.getElementById("expression-counts-body");
             expressionTable.innerHTML = "";
-            let expressionData = data.expression_counts;
+            // 🚨 Fetch the new expression_seconds field
+            let expressionData = data.expression_seconds; 
 
             for (let exp in expressionData) {
-                let row = `<tr><td>${exp}</td><td>${expressionData[exp]}</td></tr>`;
+                // 🚨 Display the time in seconds
+                let row = `<tr><td>${exp}</td><td>${expressionData[exp]} s</td></tr>`; 
                 expressionTable.innerHTML += row;
             }
             document.getElementById("expressionCounts").style.display = "block";

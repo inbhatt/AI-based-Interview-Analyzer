@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ target_user.name }}'s Performance Report</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.0/dist/chart.min.js"></script>
+    <style>
+        .report-container { padding: 40px; }
+        .card { margin-bottom: 25px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); border-radius: 10px; }
+        .header-bg { background: linear-gradient(90deg, #2193b0, #6dd5ed); color: white; }
+        /* Style for the chart in the modal */
+        .modal-body-chart { height: 70vh; width: 100%; } 
+    </style>
+</head>
+<body>
+    
+    <div class="container report-container">
+        {% if is_admin %}
+            <a href="{% url 'admin_dashboard' %}" class="btn btn-secondary mb-4">&larr; Back to Dashboard</a>
+        {% else %}
+            <a href="{% url 'home' %}" class="btn btn-secondary mb-4">&larr; Back to Home</a>
+        {% endif %}
+        
+        <h1 class="mb-4">Performance Report: **{{ target_user.name }}**</h1>
+        
+        {% if not report.summary %}
+            <div class="alert alert-info mt-5">
+                No analysis results found for this user. Please submit a video first.
+            </div>
+        {% else %}
+
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5>Average Performance Summary (Across {{ report.summary.total_runs }} Runs)</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-bordered">
+                        <thead>
+                            <tr>
+                                <th>Metric</th>
+                                <th>Average Score</th>
+                                <th>Metric</th>
+                                <th>Average Score</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>**Overall Confidence**</td>
+                                <td class="fw-bold fs-5 text-primary">{{ report.summary.avg_overall|default_if_none:"N/A" }}%</td>
+                                <td>**Facial Expression**</td>
+                                <td>{{ report.summary.avg_expression|default_if_none:"N/A" }}%</td>
+                            </tr>
+                            <tr>
+                                <td>**Eye Movement**</td>
+                                <td>{{ report.summary.avg_eye|default_if_none:"N/A" }}%</td>
+                                <td>**Speech Quality**</td>
+                                <td>{{ report.summary.avg_speech|default_if_none:"N/A" }}%</td>
+                            </tr>
+                            <tr>
+                                <td>**Hand Gesture**</td>
+                                <td>{{ report.summary.avg_gesture|default_if_none:"N/A" }}%</td>
+                                <td>**Total Videos Analyzed**</td>
+                                <td>{{ report.summary.total_runs }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-7">
+                    <div class="card">
+                        <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                            <h5>Historical Trend of Last 5 Runs</h5>
+                            <button type="button" class="btn btn-light btn-sm" data-bs-toggle="modal" data-bs-target="#historicalModal">
+                                <span style="font-size: 1.2rem;">&boxplus;</span> Enlarge
+                            </button>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="historicalChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-5">
+                    <div class="card">
+                        <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+                            <h5>Overall Expression Distribution (Time in Seconds)</h5>
+                            <button type="button" class="btn btn-light btn-sm" data-bs-toggle="modal" data-bs-target="#expressionModal">
+                                <span style="font-size: 1.2rem;">&boxplus;</span> Enlarge
+                            </button>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="expressionPieChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+    
+    <div class="modal fade" id="historicalModal" tabindex="-1" aria-labelledby="historicalModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+          <div class="modal-header header-bg">
+            <h5 class="modal-title" id="historicalModalLabel">Historical Trend - Enlarged View</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <div class="modal-body-chart">
+                <canvas id="historicalChartLarge"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal fade" id="expressionModal" tabindex="-1" aria-labelledby="expressionModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header header-bg">
+            <h5 class="modal-title" id="expressionModalLabel">Expression Distribution - Enlarged View</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <div class="modal-body-chart">
+                <canvas id="expressionPieChartLarge"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <script>
+        const historyData = {{ report.history_data|safe }};
+        const expressionData = {{ report.total_expressions|default:'{}'|safe }};
+        
+        let historicalChartInstance = null;
+        let expressionChartInstance = null;
+        let historicalChartLargeInstance = null;
+        let expressionChartLargeInstance = null;
+
+        // Configuration and data setup is shared between small and large charts
+        const chartConfigs = {};
+
+        // Color helper (defined in the previous step)
+        const getPieBackgroundColors = (labels) => labels.map(label => {
+            switch(label.toLowerCase()) {
+                case 'neutral': return '#6c757d'; 
+                case 'happy': return '#28a745'; 
+                case 'sad': return '#0d6efd';   
+                case 'anger': return '#dc3545'; 
+                case 'fear': return '#ffc107';  
+                case 'surprise': return '#17a2b8'; 
+                case 'disgust': return '#6f42c1'; 
+                default: return '#adb5bd'; 
+            }
+        });
+
+        // Function to create the Historical Line Chart configuration
+        function createHistoricalConfig(data) {
+            const labels = data.map(d => d.date);
+            const overallData = data.map(d => d.overall);
+            const expressionDataLine = data.map(d => d.expression);
+            const speechData = data.map(d => d.speech);
+
+            return {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        { label: 'Overall Confidence Score', data: overallData, borderColor: '#0d6efd', backgroundColor: 'rgba(13, 110, 253, 0.1)', fill: true, tension: 0.3 },
+                        { label: 'Facial Expression Score', data: expressionDataLine, borderColor: '#198754', backgroundColor: 'transparent', tension: 0.3 },
+                        { label: 'Speech Quality Score', data: speechData, borderColor: '#ffc107', backgroundColor: 'transparent', tension: 0.3 }
+                    ]
+                },
+                options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, max: 100, title: { display: true, text: 'Confidence Score (%)' } } } }
+            };
+        }
+
+        // Function to create the Expression Pie Chart configuration
+        function createExpressionConfig(data) {
+            const pieLabels = Object.keys(data);
+            const pieValues = Object.values(data);
+            const backgroundColors = getPieBackgroundColors(pieLabels);
+
+            return {
+                type: 'pie',
+                data: {
+                    labels: pieLabels,
+                    datasets: [{
+                        data: pieValues,
+                        backgroundColor: backgroundColors,
+                        hoverOffset: 4
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top' }, title: { display: true, text: 'Time Spent in Each Expression (Seconds)' } } }
+            };
+        }
+        
+        // --- Initialization on load ---
+        if (historyData.length > 0) {
+            chartConfigs.historical = createHistoricalConfig(historyData);
+            const ctx = document.getElementById('historicalChart').getContext('2d');
+            historicalChartInstance = new Chart(ctx, chartConfigs.historical);
+        }
+
+        if (Object.keys(expressionData).length > 0) {
+            chartConfigs.expression = createExpressionConfig(expressionData);
+            const pieCtx = document.getElementById('expressionPieChart').getContext('2d');
+            expressionChartInstance = new Chart(pieCtx, chartConfigs.expression);
+        }
+
+        // --- MODAL LOGIC ---
+        
+        // Historical Modal Logic
+        const historicalModal = document.getElementById('historicalModal');
+        historicalModal.addEventListener('shown.bs.modal', () => {
+            if (historicalChartLargeInstance) {
+                historicalChartLargeInstance.destroy(); // Destroy previous instance if it exists
+            }
+            // Use a copy of the config and set the aspect ratio options for the large view
+            const largeConfig = { ...chartConfigs.historical };
+            largeConfig.options.maintainAspectRatio = false; // Important for resizing
+            
+            const largeCtx = document.getElementById('historicalChartLarge').getContext('2d');
+            historicalChartLargeInstance = new Chart(largeCtx, largeConfig);
+        });
+
+        // Expression Modal Logic
+        const expressionModal = document.getElementById('expressionModal');
+        expressionModal.addEventListener('shown.bs.modal', () => {
+            if (expressionChartLargeInstance) {
+                expressionChartLargeInstance.destroy(); // Destroy previous instance if it exists
+            }
+            // Use a copy of the config and set the aspect ratio options for the large view
+            const largeConfig = { ...chartConfigs.expression };
+            largeConfig.options.maintainAspectRatio = false; // Important for resizing
+
+            const largeCtx = document.getElementById('expressionPieChartLarge').getContext('2d');
+            expressionChartLargeInstance = new Chart(largeCtx, largeConfig);
+        });
+        
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

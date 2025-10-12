@@ -1,0 +1,79 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Create Candidate | Admin</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        /* ... (Same styling as add_admin.html for form box) ... */
+    </style>
+</head>
+<body>
+    <div class="admin-box">
+        <h2>Create New Candidate Profile</h2>
+        
+        <form id="createCandidateForm">
+            <div class="mb-3">
+                <label for="candidateName" class="form-label">Full Name</label>
+                <input type="text" class="form-control" id="candidateName" required>
+            </div>
+            <div class="mb-3">
+                <label for="candidateEmail" class="form-label">Email address</label>
+                <input type="email" class="form-control" id="candidateEmail" required>
+            </div>
+            <div class="mb-3">
+                <label for="candidatePassword" class="form-label">Temporary Password</label>
+                <input type="password" class="form-control" id="candidatePassword" required>
+            </div>
+            
+            <p class="text-muted text-center mt-4">Role will be set to: <strong>Candidate</strong></p>
+
+            <button type="submit" class="btn btn-success w-100">Create Candidate</button>
+            <a href="{% url 'admin_dashboard' %}" class="btn btn-link w-100 mt-2">Back to Dashboard</a>
+        </form>
+    </div>
+
+    <script>
+        function displayMessage(message, type = 'danger') {
+            alert(`${type.toUpperCase()}: ${message}`);
+        }
+
+        document.getElementById('createCandidateForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const name = document.getElementById('candidateName').value.trim();
+            const email = document.getElementById('candidateEmail').value.trim();
+            const password = document.getElementById('candidatePassword').value;
+
+            if (password.length < 6) {
+                displayMessage("Password must be at least 6 characters long.", 'warning');
+                return;
+            }
+
+            const payload = { name, email, password }; 
+            // 🚨 Reuses the existing 'signup' endpoint, which hardcodes role to 'candidate' 🚨
+            fetch("{% url 'signup' %}", { 
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(payload)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    displayMessage(data.message, 'success');
+                    window.location.href = data.redirect_url; 
+                } else {
+                    displayMessage(data.message, 'danger');
+                }
+            })
+            .catch(error => {
+                displayMessage("A network error occurred.", 'danger');
+                console.error('Error:', error);
+            });
+        });
+    </script>
+</body>
+</html>
