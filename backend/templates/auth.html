@@ -1,232 +1,330 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
+<head>
+    <meta charset="UTF-8">
     <title>Authentication | Interview Confidence Analyzer</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <link
-      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
-      rel="stylesheet"
-    />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 
     <style>
-      body {
-        background-color: #ffffff;
-        min-height: 100vh;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-family: "Segoe UI", sans-serif;
-      }
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
 
-      .auth-box {
-        background: #ffffff;
-        padding: 40px;
-        border-radius: 20px;
-        box-shadow: 0 12px 25px rgba(0, 0, 0, 0.1);
-        width: 100%;
-        max-width: 450px;
-      }
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
 
-      .toggle-tabs button {
-        width: 50%;
-      }
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
 
-      .form-section {
-        display: none;
-      }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+        }
 
-      .form-section.active {
-        display: block;
-      }
+        @keyframes shimmer {
+            0% { background-position: -1000px 0; }
+            100% { background-position: 1000px 0; }
+        }
 
-      .form-control:focus {
-        border-color: #2193b0;
-        box-shadow: 0 0 0 0.2rem rgba(33, 147, 176, 0.25);
-      }
+        body {
+            background: linear-gradient(-45deg, #2193b0, #6dd5ed, #2193b0, #4facb8);
+            background-size: 400% 400%;
+            animation: gradientShift 15s ease infinite;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Segoe UI', sans-serif;
+            position: relative;
+            overflow: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1px);
+            background-size: 50px 50px;
+            animation: moveBackground 20s linear infinite;
+        }
+
+        @keyframes moveBackground {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(50px, 50px); }
+        }
+
+        .auth-box {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2), 
+                        0 0 100px rgba(33, 147, 176, 0.1);
+            width: 100%;
+            max-width: 450px;
+            position: relative;
+            animation: fadeInUp 0.8s ease-out;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .auth-box::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #2193b0, #6dd5ed, #2193b0);
+            background-size: 200% 100%;
+            animation: shimmer 3s linear infinite;
+            border-radius: 20px 20px 0 0;
+        }
+
+        .text-center h3 {
+            background: linear-gradient(135deg, #2193b0, #6dd5ed);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: slideIn 0.6s ease-out 0.2s both;
+        }
+
+        .text-center p {
+            animation: slideIn 0.6s ease-out 0.4s both;
+        }
+
+        .toggle-tabs {
+            animation: slideIn 0.6s ease-out 0.6s both;
+        }
+
+        .toggle-tabs button {
+            width: 50%;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .toggle-tabs button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .toggle-tabs button:hover::before {
+            left: 100%;
+        }
+
+        .toggle-tabs button.active {
+            background: linear-gradient(135deg, #2193b0, #6dd5ed);
+            border-color: #2193b0;
+            transform: scale(1.02);
+            box-shadow: 0 4px 15px rgba(33, 147, 176, 0.3);
+        }
+
+        .form-section {
+            display: none;
+        }
+
+        .form-section.active {
+            display: block;
+            animation: fadeInUp 0.5s ease-out;
+        }
+
+        .form-control {
+            transition: all 0.3s ease;
+            border: 2px solid #e0e0e0;
+        }
+
+        .form-control:focus {
+            border-color: #2193b0;
+            box-shadow: 0 0 0 0.2rem rgba(33, 147, 176, 0.25);
+            transform: translateY(-2px);
+        }
+
+        .form-control:hover:not(:focus) {
+            border-color: #6dd5ed;
+        }
+
+        .form-label {
+            font-weight: 500;
+            color: #333;
+            transition: color 0.3s ease;
+        }
+
+        .mb-3 {
+            animation: slideIn 0.5s ease-out;
+            animation-fill-mode: both;
+        }
+
+        .mb-3:nth-child(1) { animation-delay: 0.1s; }
+        .mb-3:nth-child(2) { animation-delay: 0.2s; }
+        .mb-3:nth-child(3) { animation-delay: 0.3s; }
+
+        .btn-primary, .btn-success {
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-primary::before, .btn-success::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s ease, height 0.6s ease;
+        }
+
+        .btn-primary:hover::before, .btn-success:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #2193b0, #6dd5ed);
+            border: none;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(33, 147, 176, 0.4);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #11998e, #38ef7d);
+            border: none;
+        }
+
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(17, 153, 142, 0.4);
+        }
+
+        .btn-primary:active, .btn-success:active {
+            transform: scale(0.98);
+        }
+
+        /* Input focus animations */
+        .form-control:focus + .form-label {
+            color: #2193b0;
+        }
+
+        /* Smooth form switching */
+        .form-section {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: none;
+        }
+
+        .form-section.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
     </style>
-  </head>
-  <body>
+</head>
+<body>
     <div class="auth-box">
-      <div class="text-center mb-4">
-        <h3 class="fw-bold">Interview Confidence Analyzer</h3>
-        <p class="text-muted">Secure Login / Signup</p>
-      </div>
+        <div class="text-center mb-4">
+            <h3 class="fw-bold">Interview Confidence Analyzer</h3>
+            <p class="text-muted">Secure Login / Signup</p>
+        </div>
 
-      <div class="toggle-tabs btn-group mb-4" role="group">
-        <button
-          type="button"
-          class="btn btn-outline-primary active"
-          id="loginTab"
-        >
-          Login
-        </button>
-        <button type="button" class="btn btn-outline-primary" id="signupTab">
-          Signup
-        </button>
-      </div>
+        <!-- Toggle -->
+        <div class="toggle-tabs btn-group mb-4" role="group">
+            <button type="button" class="btn btn-outline-primary active" id="loginTab">Login</button>
+            <button type="button" class="btn btn-outline-primary" id="signupTab">Signup</button>
+        </div>
 
-      <!-- Login Form -->
-      <div id="loginForm" class="form-section active">
-        <form id="loginFormTag">
-          <div class="mb-3">
-            <label for="loginEmail" class="form-label">Email address</label>
-            <input type="email" class="form-control" id="loginEmail" required />
-          </div>
-          <div class="mb-3">
-            <label for="loginPassword" class="form-label">Password</label>
-            <input
-              type="password"
-              class="form-control"
-              id="loginPassword"
-              required
-            />
-          </div>
-          <button type="submit" class="btn btn-primary w-100">Login</button>
-        </form>
-      </div>
+        <!-- Login Form -->
+        <div id="loginForm" class="form-section active">
+            <form method="POST" action="{% url 'login' %}">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label for="loginEmail" class="form-label">Email address</label>
+                    <input type="email" class="form-control" id="loginEmail" name="email" required>
+                </div>
+                <div class="mb-3">
+                    <label for="loginPassword" class="form-label">Password</label>
+                    <input type="password" class="form-control" id="loginPassword" name="password" required>
+                </div>
+                
+                <button type="submit" class="btn btn-primary w-100">Login</button>
+            </form>
+        </div>
 
-      <!-- Signup Form -->
-      <div id="signupForm" class="form-section">
-        <form id="signupFormTag">
-          <div class="mb-3">
-            <label for="signupName" class="form-label">Full Name</label>
-            <input type="text" class="form-control" id="signupName" required />
-          </div>
-          <div class="mb-3">
-            <label for="signupEmail" class="form-label">Email address</label>
-            <input
-              type="email"
-              class="form-control"
-              id="signupEmail"
-              required
-            />
-          </div>
-          <div class="mb-3">
-            <label for="signupPassword" class="form-label">Password</label>
-            <input
-              type="password"
-              class="form-control"
-              id="signupPassword"
-              required
-            />
-          </div>
-          <button type="submit" class="btn btn-success w-100">Signup</button>
-        </form>
-      </div>
+        <!-- Signup Form -->
+        <div id="signupForm" class="form-section">
+            <form method="POST" action="{% url 'signup' %}">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label for="signupName" class="form-label">Full Name</label>
+                    <input type="text" class="form-control" id="signupName" name="name" required>
+                </div>
+                <div class="mb-3">
+                    <label for="signupEmail" class="form-label">Email address</label>
+                    <input type="email" class="form-control" id="signupEmail" name="email" required>
+                </div>
+                <div class="mb-3">
+                    <label for="signupPassword" class="form-label">Password</label>
+                    <input type="password" class="form-control" id="signupPassword" name="password" required>
+                </div>
+                
+                <button type="submit" class="btn btn-success w-100">Signup</button>
+            </form>
+        </div>
     </div>
 
     <script>
-      const loginTab = document.getElementById("loginTab");
-      const signupTab = document.getElementById("signupTab");
-      const loginFormDiv = document.getElementById("loginForm");
-      const signupFormDiv = document.getElementById("signupForm");
+        const loginTab = document.getElementById('loginTab');
+        const signupTab = document.getElementById('signupTab');
+        const loginForm = document.getElementById('loginForm');
+        const signupForm = document.getElementById('signupForm');
 
-      // Get the actual form elements using the IDs we established
-      const loginForm = document.getElementById("loginFormTag");
-      const signupForm = document.getElementById("signupFormTag");
-
-      // If this line prints an error, the element ID is wrong!
-      console.log("Login Form Element:", loginForm);
-
-      // Toggle logic (Keep existing)
-      loginTab.addEventListener("click", () => {
-        loginTab.classList.add("active");
-        signupTab.classList.remove("active");
-        loginFormDiv.classList.add("active");
-        signupFormDiv.classList.remove("active");
-      });
-
-      signupTab.addEventListener("click", () => {
-        signupTab.classList.add("active");
-        loginTab.classList.remove("active");
-        signupFormDiv.classList.add("active");
-        loginFormDiv.classList.remove("active");
-      });
-
-      // Function to display a simple alert message
-      function displayMessage(message, type = "danger") {
-        alert(`${type.toUpperCase()}: ${message}`);
-      }
-
-      // --- 1. Signup Form Submission Listener ---
-      if (signupForm) {
-        signupForm.addEventListener("submit", function (e) {
-          e.preventDefault();
-          console.log("Signup submit prevented."); // Debug check
-
-          const name = document.getElementById("signupName").value.trim();
-          const email = document.getElementById("signupEmail").value.trim();
-          const password = document.getElementById("signupPassword").value;
-
-          if (password.length < 6) {
-            displayMessage(
-              "Password must be at least 6 characters long.",
-              "warning"
-            );
-            return;
-          }
-
-          const payload = { name, email, password };
-
-          fetch("{% url 'signup' %}", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload),
-          })
-            .then((response) => response.json())
-            .then((data) => {
-              if (data.success) {
-                displayMessage(data.message, "success");
-                loginTab.click();
-              } else {
-                displayMessage(data.message, "danger");
-              }
-            })
-            .catch((error) => {
-              displayMessage("A network error occurred.", "danger");
-              console.error("Error:", error);
-            });
+        loginTab.addEventListener('click', () => {
+            loginTab.classList.add('active');
+            signupTab.classList.remove('active');
+            loginForm.classList.add('active');
+            signupForm.classList.remove('active');
         });
-      }
 
-      // --- 2. Login Form Submission Listener ---
-      if (loginForm) {
-        // Check if the element was actually found
-        loginForm.addEventListener("submit", function (e) {
-          // 🚨 THIS MUST BE THE FIRST EXECUTABLE LINE 🚨
-          e.preventDefault();
-          console.log("Login submit prevented. Fetching data..."); // Debug check
-
-          const email = document.getElementById("loginEmail").value.trim();
-          const password = document.getElementById("loginPassword").value;
-
-          if (!email || !password) {
-            displayMessage("Please enter both email and password.", "warning");
-            return;
-          }
-
-          const payload = { email, password };
-
-          fetch("{% url 'login' %}", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload),
-          })
-            .then((response) => response.json())
-            .then((data) => {
-              if (data.success) {
-                window.location.href = data.redirect_url;
-              } else {
-                displayMessage(data.message, "danger");
-              }
-            })
-            .catch((error) => {
-              displayMessage("A network error occurred.", "danger");
-              console.error("Error:", error);
-            });
+        signupTab.addEventListener('click', () => {
+            signupTab.classList.add('active');
+            loginTab.classList.remove('active');
+            signupForm.classList.add('active');
+            loginForm.classList.remove('active');
         });
-      }
     </script>
-  </body>
+</body>
 </html>
