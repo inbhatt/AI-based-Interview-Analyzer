@@ -2,80 +2,461 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>{{ candidate.name }} Performance | Admin</title>
+    <title>Sarah Johnson Performance | Admin</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        .performance-container { padding: 40px; }
-        .result-card { margin-bottom: 20px; box-shadow: 0 4px 8px rgba(0,0,0,0.05); }
-        .score-badge { font-size: 1.1rem; padding: 0.5em 1em; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* Animated background particles */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 20% 50%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 40% 20%, rgba(255, 255, 255, 0.05) 0%, transparent 50%);
+            animation: particleFloat 20s ease-in-out infinite;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        @keyframes particleFloat {
+            0%, 100% { transform: translateY(0) scale(1); }
+            50% { transform: translateY(-20px) scale(1.1); }
+        }
+
+        .navbar {
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            backdrop-filter: blur(10px);
+            animation: slideDown 0.6s ease-out;
+            position: relative;
+            z-index: 10;
+        }
+
+        @keyframes slideDown {
+            from {
+                transform: translateY(-100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .navbar-brand {
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            transition: all 0.3s ease;
+        }
+
+        .navbar-brand:hover {
+            transform: scale(1.05);
+            text-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+        }
+
+        .nav-link {
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            width: 0;
+            height: 2px;
+            background: white;
+            transition: all 0.3s ease;
+            transform: translateX(-50%);
+        }
+
+        .nav-link:hover::after {
+            width: 80%;
+        }
+
+        .performance-container {
+            padding: 40px;
+            animation: fadeInUp 0.8s ease-out;
+            position: relative;
+            z-index: 1;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .btn-secondary {
+            transition: all 0.3s ease;
+            border: none;
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            color: white;
+            font-weight: 600;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn-secondary:hover {
+            transform: translateX(-5px);
+            background: rgba(255, 255, 255, 0.3);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        h1 {
+            color: white;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            animation: fadeInUp 0.8s ease-out 0.2s both;
+            font-weight: 700;
+        }
+
+        .lead {
+            color: rgba(255, 255, 255, 0.95);
+            animation: fadeInUp 0.8s ease-out 0.3s both;
+            font-weight: 500;
+        }
+
+        h2 {
+            color: white;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            animation: fadeInUp 0.8s ease-out 0.4s both;
+            font-weight: 600;
+        }
+
+        .result-card {
+            margin-bottom: 20px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+            border: none;
+            border-radius: 15px;
+            overflow: hidden;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            animation: cardFadeIn 0.6s ease-out both;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            position: relative;
+        }
+
+        .col-md-6:nth-child(1) .result-card { animation-delay: 0.5s; }
+        .col-md-6:nth-child(2) .result-card { animation-delay: 0.6s; }
+        .col-md-6:nth-child(3) .result-card { animation-delay: 0.7s; }
+        .col-md-6:nth-child(4) .result-card { animation-delay: 0.8s; }
+
+        @keyframes cardFadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(30px) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .result-card:hover {
+            transform: translateY(-10px) scale(1.02);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+        }
+
+        .card-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+            color: white !important;
+            font-weight: 600;
+            padding: 1rem 1.25rem;
+            border: none;
+        }
+
+        .card-body {
+            padding: 1.5rem;
+        }
+
+        .score-badge {
+            font-size: 1.1rem;
+            padding: 0.5em 1em;
+            border-radius: 50px;
+            animation: pulse 2s ease-in-out infinite;
+            box-shadow: 0 4px 15px rgba(33, 147, 176, 0.3);
+            background: linear-gradient(135deg, #2193b0 0%, #6dd5ed 100%);
+            border: none;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+                box-shadow: 0 4px 15px rgba(33, 147, 176, 0.3);
+            }
+            50% {
+                transform: scale(1.05);
+                box-shadow: 0 6px 25px rgba(33, 147, 176, 0.5);
+            }
+        }
+
+        .card-text {
+            animation: fadeIn 0.6s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        h5 {
+            color: #667eea;
+            font-weight: 700;
+            margin-top: 1rem;
+            margin-bottom: 0.75rem;
+            position: relative;
+            padding-left: 15px;
+        }
+
+        h5::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 4px;
+            height: 100%;
+            background: linear-gradient(to bottom, #667eea, #764ba2);
+            border-radius: 2px;
+        }
+
+        .list-unstyled li {
+            padding: 0.5rem 0;
+            transition: all 0.3s ease;
+            border-left: 3px solid transparent;
+            padding-left: 15px;
+        }
+
+        .list-unstyled li:hover {
+            border-left-color: #667eea;
+            padding-left: 20px;
+            background: rgba(102, 126, 234, 0.05);
+        }
+
+        hr {
+            border: none;
+            height: 2px;
+            background: linear-gradient(to right, transparent, #667eea, transparent);
+            margin: 1.5rem 0;
+            opacity: 0.3;
+        }
+
+        .alert {
+            animation: fadeInUp 0.8s ease-out 0.5s both;
+            border: none;
+            border-radius: 15px;
+            background: rgba(255, 243, 205, 0.95);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            border-left: 5px solid #ffc107;
+        }
+
+        .row {
+            animation: fadeIn 0.8s ease-out 0.5s both;
+        }
+
+        /* Shimmer effect on card hover */
+        .result-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            transition: left 0.5s ease;
+            z-index: 1;
+        }
+
+        .result-card:hover::before {
+            left: 100%;
+        }
+
+        .card-header,
+        .card-body {
+            position: relative;
+            z-index: 2;
+        }
+
+        /* Loading bar animation */
+        .card-body ul li::after {
+            content: '';
+            display: inline-block;
+            width: 0;
+            height: 2px;
+            background: linear-gradient(to right, #667eea, #764ba2);
+            margin-left: 10px;
+            transition: width 0.5s ease;
+            vertical-align: middle;
+        }
+
+        .result-card:hover .card-body ul li::after {
+            width: 30px;
+        }
+
+        /* Smooth scroll */
+        html {
+            scroll-behavior: smooth;
+        }
+
+        /* Selection color */
+        ::selection {
+            background: rgba(102, 126, 234, 0.3);
+            color: white;
+        }
+
+        /* Additional floating animation for scores */
+        .card-body li strong {
+            display: inline-block;
+            transition: transform 0.3s ease;
+        }
+
+        .card-body li:hover strong {
+            transform: translateX(5px);
+            color: #667eea;
+        }
     </style>
 </head>
 <body>
     
     <nav class="navbar navbar-expand-lg navbar-dark" style="background-color: #2193b0;">
         <div class="container-fluid">
-            <a class="navbar-brand" href="{% url 'admin_dashboard' %}">Admin Dashboard</a>
+            <a class="navbar-brand" href="#">Admin Dashboard</a>
             <div class="collapse navbar-collapse justify-content-end">
                 <ul class="navbar-nav">
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'logout' %}">Logout</a>
+                        <a class="nav-link" href="#">Logout</a>
                     </li>
                 </ul>
             </div>
         </div>
     </nav>
     <div class="container performance-container">
-        <a href="{% url 'admin_dashboard' %}" class="btn btn-secondary mb-4">&larr; Back to Dashboard</a>
+        <a href="#" class="btn btn-secondary mb-4">&larr; Back to Dashboard</a>
         
-        <h1 class="mb-4">Performance Report for: **{{ candidate.name }}**</h1>
-        <p class="lead">Email: {{ candidate.email }}</p>
+        <h1 class="mb-4">Performance Report for: <strong>Sarah Johnson</strong></h1>
+        <p class="lead">Email: sarah.johnson@example.com</p>
 
         <h2 class="mt-5 mb-3">Analysis History</h2>
 
-        {% if analysis_results %}
-            <div class="row">
-            {% for result in analysis_results %}
-                <div class="col-md-6">
-                    <div class="card result-card">
-                        <div class="card-header bg-light">
-                            **Analysis Run on:** {{ result.date_time|date:"F d, Y P" }}
-                        </div>
-                        <div class="card-body">
-                            <p class="card-text">
-                                **Overall Confidence:** <span class="badge bg-primary score-badge">{{ result.overall_confidence|floatformat:2 }}%</span>
-                            </p>
-                            <hr>
-                            
-                            <h5>Aspect Scores:</h5>
-                            <ul class="list-unstyled">
-                                <li>**Facial Expression:** {{ result.expression_confidence|floatformat:2 }}%</li>
-                                <li>**Eye Movement:** {{ result.eye_movement_confidence|floatformat:2 }}%</li>
-                                <li>**Speech:** {{ result.speech_confidence|floatformat:2 }}%</li>
-                                <li>**Hand Gesture:** {{ result.hand_gesture_confidence|floatformat:2 }}%</li>
-                            </ul>
-                            
-                            <hr>
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card result-card">
+                    <div class="card-header bg-light">
+                        <strong>Analysis Run on:</strong> October 15, 2025 3:45 PM
+                    </div>
+                    <div class="card-body">
+                        <p class="card-text">
+                            <strong>Overall Confidence:</strong> <span class="badge bg-primary score-badge">91.25%</span>
+                        </p>
+                        <hr>
+                        
+                        <h5>Aspect Scores:</h5>
+                        <ul class="list-unstyled">
+                            <li><strong>Facial Expression:</strong> 94.50%</li>
+                            <li><strong>Eye Movement:</strong> 89.80%</li>
+                            <li><strong>Speech:</strong> 92.10%</li>
+                            <li><strong>Hand Gesture:</strong> 88.60%</li>
+                        </ul>
+                        
+                        <hr>
 
-                            <h5>Expression Duration (Seconds):</h5>
-                            <ul class="list-unstyled small">
-                            {% with expressions=result.get_detailed_results.expression_seconds %}
-                                {% for expr, duration in expressions.items %}
-                                    <li>{{ expr|title }}: **{{ duration }}s**</li>
-                                {% empty %}
-                                    <li>No expression data recorded.</li>
-                                {% endfor %}
-                            {% endwith %}
-                            </ul>
-                        </div>
+                        <h5>Expression Duration (Seconds):</h5>
+                        <ul class="list-unstyled small">
+                            <li>Happy: <strong>52s</strong></li>
+                            <li>Neutral: <strong>135s</strong></li>
+                            <li>Surprised: <strong>15s</strong></li>
+                            <li>Focused: <strong>89s</strong></li>
+                        </ul>
                     </div>
                 </div>
-            {% endfor %}
             </div>
-        {% else %}
-            <div class="alert alert-warning">
-                No analysis results found for this candidate.
+            <div class="col-md-6">
+                <div class="card result-card">
+                    <div class="card-header bg-light">
+                        <strong>Analysis Run on:</strong> October 12, 2025 11:20 AM
+                    </div>
+                    <div class="card-body">
+                        <p class="card-text">
+                            <strong>Overall Confidence:</strong> <span class="badge bg-primary score-badge">86.40%</span>
+                        </p>
+                        <hr>
+                        
+                        <h5>Aspect Scores:</h5>
+                        <ul class="list-unstyled">
+                            <li><strong>Facial Expression:</strong> 90.20%</li>
+                            <li><strong>Eye Movement:</strong> 83.70%</li>
+                            <li><strong>Speech:</strong> 87.30%</li>
+                            <li><strong>Hand Gesture:</strong> 84.40%</li>
+                        </ul>
+                        
+                        <hr>
+
+                        <h5>Expression Duration (Seconds):</h5>
+                        <ul class="list-unstyled small">
+                            <li>Happy: <strong>41s</strong></li>
+                            <li>Neutral: <strong>118s</strong></li>
+                            <li>Surprised: <strong>10s</strong></li>
+                            <li>Focused: <strong>72s</strong></li>
+                        </ul>
+                    </div>
+                </div>
             </div>
-        {% endif %}
+            <div class="col-md-6">
+                <div class="card result-card">
+                    <div class="card-header bg-light">
+                        <strong>Analysis Run on:</strong> October 08, 2025 9:15 AM
+                    </div>
+                    <div class="card-body">
+                        <p class="card-text">
+                            <strong>Overall Confidence:</strong> <span class="badge bg-primary score-badge">84.75%</span>
+                        </p>
+                        <hr>
+                        
+                        <h5>Aspect Scores:</h5>
+                        <ul class="list-unstyled">
+                            <li><strong>Facial Expression:</strong> 87.90%</li>
+                            <li><strong>Eye Movement:</strong> 81.20%</li>
+                            <li><strong>Speech:</strong> 86.50%</li>
+                            <li><strong>Hand Gesture:</strong> 83.40%</li>
+                        </ul>
+                        
+                        <hr>
+
+                        <h5>Expression Duration (Seconds):</h5>
+                        <ul class="list-unstyled small">
+                            <li>Happy: <strong>36s</strong></li>
+                            <li>Neutral: <strong>105s</strong></li>
+                            <li>Surprised: <strong>9s</strong></li>
+                            <li>Focused: <strong>68s</strong></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>

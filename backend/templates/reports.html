@@ -6,11 +6,360 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.0/dist/chart.min.js"></script>
     <style>
-        .report-container { padding: 40px; }
-        .card { margin-bottom: 25px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); border-radius: 10px; }
-        .header-bg { background: linear-gradient(90deg, #2193b0, #6dd5ed); color: white; }
-        /* Style for the chart in the modal */
-        .modal-body-chart { height: 70vh; width: 100%; } 
+        /* Base styles and animations */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes slideInLeft {
+            from {
+                opacity: 0;
+                transform: translateX(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.05);
+            }
+        }
+
+        @keyframes shimmer {
+            0% {
+                background-position: -1000px 0;
+            }
+            100% {
+                background-position: 1000px 0;
+            }
+        }
+
+        @keyframes float {
+            0%, 100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-10px);
+            }
+        }
+
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 20% 50%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(99, 102, 241, 0.3) 0%, transparent 50%),
+                radial-gradient(circle at 40% 20%, rgba(168, 85, 247, 0.2) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .report-container { 
+            padding: 40px;
+            position: relative;
+            z-index: 2;
+            animation: fadeIn 0.8s ease-out;
+        }
+
+        .card { 
+            margin-bottom: 25px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+            border-radius: 15px;
+            border: none;
+            overflow: hidden;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            animation: fadeIn 0.6s ease-out backwards;
+        }
+
+        .card:nth-child(1) { animation-delay: 0.1s; }
+        .card:nth-child(2) { animation-delay: 0.2s; }
+        .card:nth-child(3) { animation-delay: 0.3s; }
+
+        .card:hover {
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+        }
+
+        .card-header {
+            padding: 20px;
+            border: none;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card-header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            transition: left 0.5s;
+        }
+
+        .card:hover .card-header::before {
+            left: 100%;
+        }
+
+        .card-header h5 {
+            margin: 0;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        .header-bg { 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .bg-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+        }
+
+        .bg-success {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%) !important;
+        }
+
+        .bg-info {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%) !important;
+        }
+
+        h1 {
+            color: white;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            font-weight: 700;
+            animation: slideInLeft 0.8s ease-out;
+            padding: 20px 0;
+        }
+
+        .btn {
+            transition: all 0.3s ease;
+            font-weight: 500;
+            border-radius: 8px;
+            padding: 10px 24px;
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.8);
+            color: white;
+            backdrop-filter: blur(10px);
+            animation: slideInLeft 0.6s ease-out;
+        }
+
+        .btn-secondary:hover {
+            background: white;
+            color: #667eea;
+            transform: translateX(-5px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .btn-light {
+            border-radius: 6px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn-light:hover {
+            transform: scale(1.1);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+
+        .table {
+            margin-bottom: 0;
+        }
+
+        .table thead th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        .table tbody tr {
+            transition: all 0.3s ease;
+        }
+
+        .table tbody tr:hover {
+            background: linear-gradient(90deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+            transform: scale(1.02);
+        }
+
+        .table td {
+            padding: 15px;
+            vertical-align: middle;
+            border-color: rgba(0,0,0,0.05);
+        }
+
+        .text-primary {
+            color: #667eea !important;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        .fw-bold.fs-5 {
+            text-shadow: 0 2px 4px rgba(102, 126, 234, 0.2);
+        }
+
+        .alert-info {
+            background: rgba(255, 255, 255, 0.9);
+            border: 2px solid rgba(102, 126, 234, 0.5);
+            border-radius: 12px;
+            color: #667eea;
+            font-weight: 500;
+            animation: fadeIn 0.8s ease-out;
+        }
+
+        .row > div {
+            animation: fadeIn 0.8s ease-out backwards;
+        }
+
+        .row > div:first-child {
+            animation: slideInLeft 0.8s ease-out backwards;
+            animation-delay: 0.4s;
+        }
+
+        .row > div:last-child {
+            animation: slideInRight 0.8s ease-out backwards;
+            animation-delay: 0.4s;
+        }
+
+        .modal-content {
+            border-radius: 15px;
+            border: none;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        .modal-header {
+            padding: 25px;
+            border: none;
+        }
+
+        .modal-body {
+            padding: 30px;
+        }
+
+        .modal-body-chart { 
+            height: 70vh;
+            width: 100%;
+            position: relative;
+        }
+
+        .btn-close-white {
+            transition: transform 0.3s ease;
+        }
+
+        .btn-close-white:hover {
+            transform: rotate(90deg) scale(1.2);
+        }
+
+        canvas {
+            transition: opacity 0.3s ease;
+        }
+
+        .card-body {
+            padding: 25px;
+        }
+
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 10px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 5px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+        }
+
+        /* Loading animation for charts */
+        .card-body canvas {
+            animation: fadeIn 1s ease-out 0.5s backwards;
+        }
+
+        /* Floating animation for enlarge buttons */
+        .btn-light span {
+            display: inline-block;
+            transition: transform 0.3s ease;
+        }
+
+        .btn-light:hover span {
+            animation: float 1s ease-in-out infinite;
+        }
+
+        /* Modal entrance animation */
+        .modal.show .modal-dialog {
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        /* Table data emphasis */
+        .table tbody td:nth-child(2),
+        .table tbody td:nth-child(4) {
+            font-weight: 600;
+            color: #667eea;
+        }
+
+        /* Responsive enhancements */
+        @media (max-width: 768px) {
+            .report-container {
+                padding: 20px;
+            }
+
+            h1 {
+                font-size: 1.8rem;
+            }
+
+            .card {
+                margin-bottom: 20px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -239,7 +588,7 @@
             largeConfig.options.maintainAspectRatio = false; // Important for resizing
 
             const largeCtx = document.getElementById('expressionPieChartLarge').getContext('2d');
-            expressionChartLargeInstance = new Chart(largeCtx, largeConfig);
+            expressionChartLargeInstance = new Chart(largeCtx, chartConfigs.expression);
         });
         
     </script>

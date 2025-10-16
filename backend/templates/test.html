@@ -5,6 +5,244 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Video Upload</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Animated background circles */
+        body::before,
+        body::after {
+            content: '';
+            position: absolute;
+            border-radius: 50%;
+            animation: float 8s ease-in-out infinite;
+        }
+
+        body::before {
+            width: 300px;
+            height: 300px;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.15), transparent);
+            top: -150px;
+            left: -150px;
+            animation-delay: 0s;
+        }
+
+        body::after {
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.1), transparent);
+            bottom: -200px;
+            right: -200px;
+            animation-delay: 2s;
+            animation-duration: 10s;
+        }
+
+        @keyframes float {
+            0%, 100% {
+                transform: translate(0, 0) scale(1);
+            }
+            25% {
+                transform: translate(30px, -30px) scale(1.1);
+            }
+            50% {
+                transform: translate(-20px, 20px) scale(0.9);
+            }
+            75% {
+                transform: translate(20px, 30px) scale(1.05);
+            }
+        }
+
+        /* Additional floating particles */
+        @keyframes floatParticle1 {
+            0%, 100% { transform: translate(0, 0); }
+            50% { transform: translate(100px, -80px); }
+        }
+
+        @keyframes floatParticle2 {
+            0%, 100% { transform: translate(0, 0); }
+            50% { transform: translate(-80px, 100px); }
+        }
+
+        h1 {
+            position: relative;
+            z-index: 10;
+            font-size: 120px;
+            font-weight: 900;
+            color: #fff;
+            text-shadow: 
+                0 0 10px rgba(255, 255, 255, 0.5),
+                0 0 20px rgba(255, 255, 255, 0.3),
+                0 10px 30px rgba(0, 0, 0, 0.3);
+            letter-spacing: 5px;
+            animation: glowPulse 3s ease-in-out infinite, slideInScale 1s ease-out;
+        }
+
+        @keyframes slideInScale {
+            0% {
+                opacity: 0;
+                transform: scale(0.5) translateY(50px);
+            }
+            50% {
+                transform: scale(1.1) translateY(-10px);
+            }
+            100% {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+
+        @keyframes glowPulse {
+            0%, 100% {
+                text-shadow: 
+                    0 0 10px rgba(255, 255, 255, 0.5),
+                    0 0 20px rgba(255, 255, 255, 0.3),
+                    0 10px 30px rgba(0, 0, 0, 0.3);
+            }
+            50% {
+                text-shadow: 
+                    0 0 20px rgba(255, 255, 255, 0.8),
+                    0 0 40px rgba(255, 255, 255, 0.5),
+                    0 0 60px rgba(255, 255, 255, 0.3),
+                    0 15px 40px rgba(0, 0, 0, 0.4);
+            }
+        }
+
+        /* Add a decorative element before the text */
+        h1::before {
+            content: '✓';
+            position: absolute;
+            left: -80px;
+            top: 50%;
+            transform: translateY(-50%) scale(0);
+            font-size: 80px;
+            color: #4ade80;
+            text-shadow: 
+                0 0 20px rgba(74, 222, 128, 0.6),
+                0 0 40px rgba(74, 222, 128, 0.4);
+            animation: checkmarkPop 0.8s ease-out 0.5s forwards;
+        }
+
+        @keyframes checkmarkPop {
+            0% {
+                transform: translateY(-50%) scale(0) rotate(-180deg);
+                opacity: 0;
+            }
+            60% {
+                transform: translateY(-50%) scale(1.2) rotate(10deg);
+            }
+            100% {
+                transform: translateY(-50%) scale(1) rotate(0deg);
+                opacity: 1;
+            }
+        }
+
+        /* Add shimmer effect */
+        h1::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(
+                90deg,
+                transparent,
+                rgba(255, 255, 255, 0.4),
+                transparent
+            );
+            animation: shimmer 3s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { left: -100%; }
+            50%, 100% { left: 100%; }
+        }
+
+        /* Confetti-like particles */
+        @keyframes confetti1 {
+            0% {
+                transform: translateY(0) rotate(0deg);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(1000px) rotate(720deg);
+                opacity: 0;
+            }
+        }
+
+        @keyframes confetti2 {
+            0% {
+                transform: translateY(0) rotate(0deg) translateX(0);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(1000px) rotate(-720deg) translateX(200px);
+                opacity: 0;
+            }
+        }
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 60px;
+                letter-spacing: 3px;
+            }
+
+            h1::before {
+                left: -50px;
+                font-size: 50px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            h1 {
+                font-size: 40px;
+                letter-spacing: 2px;
+            }
+
+            h1::before {
+                left: -40px;
+                font-size: 35px;
+            }
+        }
+
+        /* Pulse ring effect */
+        @keyframes pulseRing {
+            0% {
+                transform: translate(-50%, -50%) scale(0.8);
+                opacity: 1;
+            }
+            100% {
+                transform: translate(-50%, -50%) scale(2);
+                opacity: 0;
+            }
+        }
+
+        body {
+            animation: gradientShift 10s ease infinite;
+            background-size: 200% 200%;
+        }
+
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+    </style>
 </head>
 <body>
     <h1>Received</h1>

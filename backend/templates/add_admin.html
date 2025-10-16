@@ -6,25 +6,432 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
+        @keyframes gradientFlow {
+            0% {
+                background-position: 0% 50%;
+            }
+            50% {
+                background-position: 100% 50%;
+            }
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+
+        @keyframes fadeInScale {
+            from {
+                opacity: 0;
+                transform: scale(0.9) translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+
+        @keyframes slideInLeft {
+            from {
+                opacity: 0;
+                transform: translateX(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes float {
+            0%, 100% {
+                transform: translateY(0px) rotate(0deg);
+            }
+            50% {
+                transform: translateY(-20px) rotate(5deg);
+            }
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.05);
+            }
+        }
+
+        @keyframes shimmer {
+            0% {
+                background-position: -1000px 0;
+            }
+            100% {
+                background-position: 1000px 0;
+            }
+        }
+
+        @keyframes glow {
+            0%, 100% {
+                box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+            }
+            50% {
+                box-shadow: 0 12px 40px rgba(33, 147, 176, 0.3), 0 0 60px rgba(33, 147, 176, 0.1);
+            }
+        }
+
+        @keyframes rotateHue {
+            0% {
+                filter: hue-rotate(0deg);
+            }
+            100% {
+                filter: hue-rotate(360deg);
+            }
+        }
+
+        @keyframes bounce {
+            0%, 100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-10px);
+            }
+        }
+
         body {
-            background-color: #f8f9fa;
+            background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
+            background-size: 400% 400%;
+            animation: gradientFlow 15s ease infinite;
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
+            font-family: "Segoe UI", sans-serif;
+            position: relative;
+            overflow: hidden;
         }
+
+        body::before {
+            content: '';
+            position: absolute;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+            border-radius: 50%;
+            top: -300px;
+            right: -200px;
+            animation: float 8s ease-in-out infinite;
+        }
+
+        body::after {
+            content: '';
+            position: absolute;
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.08) 0%, transparent 70%);
+            border-radius: 50%;
+            bottom: -200px;
+            left: -100px;
+            animation: float 10s ease-in-out infinite reverse;
+        }
+
         .admin-box {
-            background: #ffffff;
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(20px);
             padding: 40px;
             border-radius: 20px;
             box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+            animation: fadeInScale 0.8s cubic-bezier(0.34, 1.56, 0.64, 1), glow 3s ease-in-out infinite;
             width: 100%;
             max-width: 450px;
+            position: relative;
+            z-index: 10;
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            overflow: hidden;
         }
+
+        .admin-box::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 5px;
+            background: linear-gradient(90deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
+            background-size: 200% 100%;
+            animation: shimmer 3s linear infinite;
+        }
+
+        .admin-box::after {
+            content: '👤';
+            position: absolute;
+            top: -30px;
+            right: 20px;
+            font-size: 100px;
+            opacity: 0.05;
+            animation: float 6s ease-in-out infinite;
+        }
+
         .admin-box h2 {
             text-align: center;
             margin-bottom: 30px;
-            color: #2193b0;
+            background: linear-gradient(135deg, #ee7752 0%, #e73c7e 50%, #23a6d5 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-weight: 700;
+            font-size: 1.8rem;
+            animation: slideInLeft 0.6s ease-out;
+            position: relative;
+            padding-bottom: 15px;
+        }
+
+        .admin-box h2::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80px;
+            height: 4px;
+            background: linear-gradient(90deg, #ee7752, #23a6d5);
+            border-radius: 2px;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        form {
+            position: relative;
+            z-index: 1;
+        }
+
+        .mb-3 {
+            animation: slideInRight 0.5s ease-out;
+        }
+
+        .mb-3:nth-child(1) {
+            animation-delay: 0.1s;
+            opacity: 0;
+            animation-fill-mode: forwards;
+        }
+
+        .mb-3:nth-child(2) {
+            animation-delay: 0.2s;
+            opacity: 0;
+            animation-fill-mode: forwards;
+        }
+
+        .mb-3:nth-child(3) {
+            animation-delay: 0.3s;
+            opacity: 0;
+            animation-fill-mode: forwards;
+        }
+
+        .form-label {
+            font-weight: 600;
+            color: #495057;
+            margin-bottom: 8px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            position: relative;
+            display: inline-block;
+        }
+
+        .form-label::before {
+            content: '●';
+            position: absolute;
+            left: -15px;
+            color: #23a6d5;
+            opacity: 0;
+            transition: all 0.3s ease;
+        }
+
+        .form-control:focus + .form-label::before,
+        .mb-3:hover .form-label::before {
+            opacity: 1;
+            left: -12px;
+        }
+
+        .form-control {
+            border: 2px solid #e9ecef;
+            border-radius: 12px;
+            padding: 14px 18px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            background: white;
+            font-size: 15px;
+        }
+
+        .form-control:hover {
+            border-color: #cbd5e0;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        }
+
+        .form-control:focus {
+            border-color: #23a6d5;
+            box-shadow: 0 0 0 0.2rem rgba(35, 166, 213, 0.25), 0 4px 16px rgba(35, 166, 213, 0.2);
+            transform: translateY(-2px);
+            background: #ffffff;
+        }
+
+        .text-muted {
+            animation: slideInLeft 0.6s ease-out 0.4s both;
+            padding: 15px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, rgba(35, 166, 213, 0.05) 0%, rgba(238, 119, 82, 0.05) 100%);
+            border-left: 4px solid #23a6d5;
+        }
+
+        .text-muted strong {
+            color: #23a6d5;
+            font-weight: 700;
+            font-size: 1.1rem;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        .btn {
+            border-radius: 12px;
+            padding: 14px 28px;
+            font-weight: 600;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+            border: none;
+            animation: slideInRight 0.6s ease-out 0.5s both;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-size: 15px;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.4);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        .btn:hover::before {
+            width: 400px;
+            height: 400px;
+        }
+
+        .btn::after {
+            content: '→';
+            position: absolute;
+            right: 20px;
+            opacity: 0;
+            transform: translateX(-10px);
+            transition: all 0.3s ease;
+        }
+
+        .btn:hover::after {
+            opacity: 1;
+            transform: translateX(0);
+            right: 15px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #ee7752 0%, #e73c7e 50%, #23a6d5 100%);
+            background-size: 200% 100%;
+            box-shadow: 0 5px 20px rgba(35, 166, 213, 0.4);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 30px rgba(35, 166, 213, 0.6);
+            background-position: right center;
+        }
+
+        .btn-primary:active {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 15px rgba(35, 166, 213, 0.4);
+        }
+
+        .btn.w-100 {
+            position: relative;
+            z-index: 1;
+        }
+
+        .btn.w-100:hover {
+            animation: none;
+        }
+
+        input[type="text"],
+        input[type="email"],
+        input[type="password"] {
+            background: #ffffff;
+        }
+
+        input[type="text"]:focus,
+        input[type="email"]:focus,
+        input[type="password"]:focus {
+            background: #ffffff;
+        }
+
+        input:-webkit-autofill,
+        input:-webkit-autofill:hover,
+        input:-webkit-autofill:focus {
+            -webkit-box-shadow: 0 0 0 1000px white inset;
+            transition: background-color 5000s ease-in-out 0s;
+        }
+
+        @media (max-width: 576px) {
+            .admin-box {
+                margin: 20px;
+                padding: 30px 20px;
+            }
+
+            .admin-box h2 {
+                font-size: 1.5rem;
+            }
+
+            body::before,
+            body::after {
+                display: none;
+            }
+        }
+
+        .form-control::placeholder {
+            color: #adb5bd;
+            transition: all 0.3s ease;
+        }
+
+        .form-control:focus::placeholder {
+            transform: translateX(5px);
+            opacity: 0.7;
+        }
+
+        p.text-muted.text-center.mt-4 {
+            position: relative;
+            overflow: hidden;
+        }
+
+        p.text-muted.text-center.mt-4::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+            animation: shimmer 3s infinite;
+        }
+
+        form {
+            animation: fadeInScale 0.6s ease-out 0.2s both;
         }
     </style>
 </head>
