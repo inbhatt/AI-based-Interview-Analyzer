@@ -22,6 +22,8 @@ from .models import Expression, Eyes, HandsExpression, Speech, User, AnalysisRes
 from django.db.models import Avg, Count
 import random
 from django.http import FileResponse
+from .llm_service import evaluate_answer   # import our function
+
 
 # Load NLP data
 nltk.download("punkt")
@@ -182,104 +184,272 @@ def home(request: HttpRequest):
 # Video Processing Views (Keep the original logic)
 # ----------------------------------------------------------
 
+
+
 @csrf_exempt
 def upload_video(request):
     if request.method == "POST" and request.FILES.get("video"):
         user_id = request.session.get('user_id')
         if not user_id:
             return JsonResponse({"error": "User not authenticated. Please log in."}, status=401)
-        
+
         try:
             user = User.objects.get(id=user_id)
         except User.DoesNotExist:
             return JsonResponse({"error": "User not found."}, status=401)
-        
+
         video_file = request.FILES["video"]
         now = datetime.now()
         timestamp_str = now.strftime("%Y%m%d_%H%M%S")
         file_name, file_extension = os.path.splitext(video_file.name)
-        file_path = default_storage.save("backend/videos/" + str(user_id) + "_" + timestamp_str + file_extension, ContentFile(video_file.read()))
 
-        result = analyze_video(file_path)
+        file_path = default_storage.save(
+            "backend/videos/" + str(user_id) + "_" + timestamp_str + file_extension,
+            ContentFile(video_file.read())
+        )
 
+        # 🟦 STEP 1 — Your existing video analysis
+        absolute_path = default_storage.path(file_path)
+        result = analyze_video(absolute_path)
+
+        # 🟩 STEP 2 — (Placeholder) Get transcript from the video
+        # TODO: Replace this with your real speech-to-text system
+        transcript_text = result.get("transcript", "I am placeholder text because transcript is not implemented yet.")
+
+        # 🟧 STEP 3 — Send to LLaMA: Evaluate the answer
+        interview_question = "Tell me about yourself."  # Replace with real question if you have
+        llm_result = evaluate_answer(interview_question, transcript_text)
+
+        
+        # Extract LLM results
+        llm_confidence = llm_result.get("confidence_score", 0)
+        llm_content_score = llm_result.get("content_score", 0)
+        llm_overall = llm_result.get("overall_score", 0)
+        llm_feedback = llm_result.get("feedback", "")
+        llm_mistakes = llm_result.get("mistakes", [])
+
+        # 🟥 STEP 4 — Combine your model's confidence + LLM score
+        final_confidence = int((result['overall_confidence'] + llm_confidence) / 2)
+
+        # 🟦 STEP 5 — Save everything in DB
         AnalysisResult.objects.create(
             user=user,
             video_path=file_path,
-            # 🚨 SAVING ALL FIVE SCORES 🚨
-            overall_confidence=result['overall_confidence'],
+
+            # your old scores
+            overall_confidence=final_confidence,
             expression_confidence=result['expression_confidence'],
             eye_movement_confidence=result['eye_movement_confidence'],
             speech_confidence=result['speech_confidence'],
             hand_gesture_confidence=result['hand_gesture_confidence'],
-            
-            detailed_results=json.dumps(result) # Store the full analysis dictionary
+
+            # save full result including AI feedback
+            detailed_results=json.dumps({
+                "video_analysis": result,
+                "llm_analysis": llm_result,
+                "final_confidence": final_confidence
+            })
         )
 
+        # 🟪 STEP 6 — Return both results to frontend
         return JsonResponse({
-            "confidence_result": result,
-            "expression_seconds": result["expression_seconds"] # Use new seconds field
+            "video_confidence_result": result,
+            "llm_answer_evaluation": llm_result,
+            "final_confidence": final_confidence,
+            "expression_seconds": result.get("expression_seconds", 0)
         })
 
     return JsonResponse({"error": "Invalid request"}, status=400)
 
 
-def analyze_video(video_path):
-    """
-    MOCKED FUNCTION: Returns random analysis results for the demo.
-    """
-    # 1. Generate random scores (between 55% and 95%)
-    exp_conf = round(random.uniform(55.0, 95.0), 2)
-    eye_conf = round(random.uniform(55.0, 95.0), 2)
-    speech_conf = round(random.uniform(55.0, 95.0), 2)
-    hand_conf = round(random.uniform(55.0, 95.0), 2)
-    
-    # 2. Calculate overall confidence using the weights (same as your original logic)
-    CONF_WEIGHTS = {
-        "expression": 0.4,
-        "eye_movement": 0.2,
-        "speech": 0.2,
-        "gesture": 0.2
-    }
-    overall_confidence = (
-        (CONF_WEIGHTS["expression"] * exp_conf) +
-        (CONF_WEIGHTS["eye_movement"] * eye_conf) +
-        (CONF_WEIGHTS["speech"] * speech_conf) +
-        (CONF_WEIGHTS["gesture"] * hand_conf)
-    )
-    overall_confidence = round(overall_confidence, 2) # Normalize to 100
-    
-    # 3. Generate random expression seconds
-    # Assuming video duration is around 30-60 seconds for a demo
-    total_duration = random.randint(30, 60)
-    
-    # Randomly assign portions of the total duration to key expressions
-    seconds_neutral = random.randint(int(total_duration * 0.4), int(total_duration * 0.7))
-    seconds_happy = random.randint(5, 15)
-    
-    # Ensure sad/other is not too high
-    seconds_sad = random.randint(0, 10) 
-    
-    # Adjust neutral to ensure total is approximately correct
-    seconds_neutral = total_duration - seconds_happy - seconds_sad
-    if seconds_neutral < 0:
-        seconds_neutral = 5 # Failsafe
-    
-    expression_seconds = {
-        "neutral": seconds_neutral,
-        "happy": seconds_happy,
-        "sad": seconds_sad,
-        "surprise": random.randint(0, 5),
-    }
+def transcribe_audio(video_path):
+    try:
+        audio_path = extract_audio(video_path)
 
-    # Final scores object
-    return {
-        "expression_seconds": expression_seconds,
-        "expression_confidence": exp_conf,
-        "eye_movement_confidence": eye_conf,
-        "speech_confidence": speech_conf,
-        "hand_gesture_confidence": hand_conf,
-        "overall_confidence": overall_confidence,
-    }
+        if not audio_path:
+            print("❌ Audio extraction failed")
+            return ""
+
+        recognizer = sr.Recognizer()
+        with sr.AudioFile(audio_path) as source:
+            audio_data = recognizer.record(source)
+
+        text = recognizer.recognize_google(audio_data)
+        return text
+
+    except Exception as e:
+        print("❌ TRANSCRIPTION ERROR:", e)
+        return ""
+
+
+import ollama
+import cv2
+import numpy as np
+
+# ------------------------------------------------------
+# Placeholder Detection Functions (No ML Yet)
+# Replace these later with your real video analysis logic
+# ------------------------------------------------------
+
+def detect_expression(video_path):
+    # Dummy value until real model added
+    return 70  
+
+def detect_eye_movement(video_path):
+    return 65
+
+def detect_speech(video_path):
+    return 60
+
+def detect_hand_gesture(video_path):
+    return 75
+def detect_questions(text):
+    if not text:
+        return []
+    import re
+    questions = re.findall(r'[^.?!]*\?', text)
+    return questions
+
+
+def detect_filler_words(text):
+    fillers = ["um", "uh", "er", "like", "you know"]
+    found = [w for w in fillers if w in text.lower()]
+    return found
+
+def analyze_video(video_path):
+    try:
+        # 1️⃣ Extract audio
+        audio_path = extract_audio(video_path)
+
+        if not audio_path or not os.path.exists(audio_path):
+            print("❌ Audio extraction failed")
+            transcription = ""
+        else:
+            # 2️⃣ Convert audio → text
+            transcription = transcribe_audio(audio_path)
+
+        # Debug
+        print("TRANSCRIPTION:", transcription)
+
+        # 3️⃣ Detect questions & filler words
+        questions_detected = detect_questions(transcription)
+        filler_words = detect_filler_words(transcription)
+
+        print("QUESTIONS DETECTED:", questions_detected)
+        print("FILLER WORDS:", filler_words)
+
+        # 4️⃣ Evaluate with LLaMA (gemma:2b)
+        try:
+            response = ollama.chat(
+                model="gemma:2b",
+                messages=[
+                    {
+                        "role": "user",
+                        "content": f"""
+You are an AI interview evaluator.
+
+Candidate transcript:
+\"\"\"{transcription}\"\"\"
+
+Identify:
+1. Is the answer meaningful? (yes/no)
+2. Give max 2–3 sentence feedback.
+3. Score answer quality from 0–100.
+4. Deduct score if filler words found: {filler_words}
+5. Deduct score if answer is empty or irrelevant.
+
+Return JSON ONLY in this exact format:
+
+{{
+  "confidence_score": number,
+  "content_score": number,
+  "overall_score": number,
+  "feedback": "...",
+  "mistakes": ["...", "..."]
+}}
+"""
+                    }
+                ],
+            )
+        except Exception as e:
+            print("❌ LLM ERROR:", e)
+            return {"error": "llm_failed", "details": str(e)}
+
+        llm_text = response["message"]["content"]
+        print("LLM RAW OUTPUT:", llm_text)
+
+        # 5️⃣ Parse LLM JSON safely
+        import json
+        try:
+            llm_json = json.loads(llm_text)
+        except:
+            llm_json = {
+                "confidence_score": 0,
+                "content_score": 0,
+                "overall_score": 0,
+                "feedback": "LLM returned invalid JSON.",
+                "mistakes": []
+            }
+
+        # 6️⃣ Default video analysis (your placeholders)
+        video_scores = {
+            "overall_confidence": 80,
+            "expression_confidence": 70,
+            "eye_movement_confidence": 75,
+            "speech_confidence": 85,
+            "hand_gesture_confidence": 60,
+            "expression_seconds": 5,
+        }
+
+        # 7️⃣ Combine both scores
+        final_score = int((video_scores["overall_confidence"] + llm_json["overall_score"]) / 2)
+
+        # 8️⃣ Return everything
+        return {
+            **video_scores,
+            "transcript": transcription,
+            "questions_detected": questions_detected,
+            "filler_words": filler_words,
+            "llm_analysis": llm_json,
+            "final_score": final_score,
+        }
+
+    except Exception as e:
+        print("❌ FULL ANALYSIS ERROR:", e)
+        return {"error": "processing_failed", "details": str(e)}
+
+
+def extract_audio(video_path):
+    try:
+        audio_path = f"{video_path}_audio.wav"
+
+        cmd = [
+            "ffmpeg",
+            "-y",
+            "-i", video_path,
+            "-ac", "1",
+            "-ar", "16000",
+            audio_path
+        ]
+
+        result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+        # Debug logs
+        print("FFMPEG STDERR:", result.stderr.decode())
+
+        # Check if file really exists
+        if not os.path.exists(audio_path):
+            print("❌ AUDIO FILE NOT CREATED")
+            return None
+
+        return audio_path
+
+    except Exception as e:
+        print("❌ AUDIO EXTRACTION ERROR:", e)
+        return None
+
+
+
 """def analyze_video(video_path):
     cap = cv2.VideoCapture(video_path)
     total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
