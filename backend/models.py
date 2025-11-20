@@ -51,16 +51,17 @@ class AnalysisResult(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     date_time = models.DateTimeField(auto_now_add=True)
     video_path = models.CharField(max_length=500)
-    
+
     # 🚨 NEW FIELDS FOR INDIVIDUAL SCORES 🚨
     overall_confidence = models.FloatField()
     expression_confidence = models.FloatField(default=0.0)
     eye_movement_confidence = models.FloatField(default=0.0)
     speech_confidence = models.FloatField(default=0.0)
     hand_gesture_confidence = models.FloatField(default=0.0)
-    
+    speech_details = models.TextField(default="[]")
+
     # This field still stores the full detail (including expression_seconds)
-    detailed_results = models.TextField() 
+    detailed_results = models.TextField()
 
     def get_detailed_results(self):
         """Utility to deserialize results from TextField."""
@@ -68,6 +69,12 @@ class AnalysisResult(models.Model):
             return json.loads(self.detailed_results)
         except json.JSONDecodeError:
             return {}
+
+    def get_speech_details(self):
+        try:
+            return json.loads(self.speech_details)
+        except:
+            return []
 
     def __str__(self):
         return f"Analysis for {self.user.email} on {self.date_time.strftime('%Y-%m-%d %H:%M')}"

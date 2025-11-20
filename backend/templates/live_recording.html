@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Live Recording – {{ candidate.name }}</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+
+    <style>
+        body {
+            background: #f0f4ff;
+            font-family: "Segoe UI", sans-serif;
+        }
+        video {
+            width: 100%;
+            border-radius: 12px;
+            border: 4px solid #6a5acd;
+        }
+        #status {
+            font-size: 18px;
+            font-weight: bold;
+        }
+        .recording {
+            color: red;
+            animation: blink 0.9s infinite;
+        }
+        @keyframes blink {
+            50% { opacity: 0; }
+        }
+        video#preview {
+            transform: scaleX(-1);      /* Fix mirror */
+        }
+    </style>
+</head>
+<body>
+<div class="container mt-5">
+
+    <h2 class="mb-4">🔴 Live Interview Recording for <strong>{{ candidate.name }}</strong></h2>
+
+    <div id="status" class="mb-3 text-primary">Camera Ready</div>
+
+    <video id="preview" autoplay muted playsinline></video>
+
+    <div class="mt-4">
+        <button id="startBtn" class="btn btn-success btn-lg">Start Recording</button>
+        <button id="stopBtn" class="btn btn-danger btn-lg" disabled>Stop & Upload</button>
+        <a href="/admin-dashboard" class="btn btn-secondary btn-lg">Back</a>
+    </div>
+
+</div>
+
+<!-- ===================================================== -->
+<!-- PROCESSING MODAL -->
+<!-- ===================================================== -->
+<div class="modal fade" id="processingModal" tabindex="-1" aria-hidden="true"
+     data-bs-backdrop="static" data-bs-keyboard="false">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content p-4 text-center">
+      <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;"></div>
+      <h5 class="mt-3">Processing video...</h5>
+      <p class="text-muted">This may take 10–90 seconds.</p>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+let mediaRecorder;
+let recordedChunks = [];
+
+const preview = document.getElementById("preview");
+const statusText = document.getElementById("status");
+const startBtn = document.getElementById("startBtn");
+const stopBtn = document.getElementById("stopBtn");
+
+// Request webcam
+navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+    .then(stream => {
+        preview.srcObject = stream;
+
+        mediaRecorder = new MediaRecorder(stream, {
+            mimeType: "video/webm"
+        });
+
+        mediaRecorder.ondataavailable = event => {
+            if (event.data.size > 0) recordedChunks.push(event.data);
+        };
+
+        mediaRecorder.onstop = () => {
+            showProcessingModal();   // <-- Show modal immediately
+            uploadVideo();           // <-- Begin upload + processing
+        };
+    })
+    .catch(err => {
+        alert("Camera access denied: " + err);
+    });
+
+
+// START Recording
+startBtn.onclick = () => {
+    recordedChunks = [];
+    mediaRecorder.start();
+
+    startBtn.disabled = true;
+    stopBtn.disabled = false;
+
+    statusText.innerHTML = "🔴 Recording…";
+    statusText.classList.add("recording");
+};
+
+
+// STOP Recording
+stopBtn.onclick = () => {
+    mediaRecorder.stop();
+
+    stopBtn.disabled = true;
+    statusText.classList.remove("recording");
+    statusText.innerHTML = "Processing & Uploading…";
+};
+
+
+// Upload to Django
+function uploadVideo() {
+    const blob = new Blob(recordedChunks, { type: "video/webm" });
+    const formData = new FormData();
+    formData.append("video", blob, "recording.webm");
+
+    fetch("/save-live-recording/{{ user_id }}/", {
+        method: "POST",
+        body: formData
+    })
+
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            statusText.innerHTML = "✅ Analysis Complete! Redirecting…";
+            window.location.href = data.redirect_url;
+        } else {
+            hideProcessingModal();
+            statusText.innerHTML = "❌ Error: " + data.error;
+        }
+    })
+    .catch(err => {
+        hideProcessingModal();
+        statusText.innerHTML = "❌ Upload failed: " + err;
+    });
+}
+
+
+// Show processing modal
+function showProcessingModal() {
+    let modal = new bootstrap.Modal(document.getElementById("processingModal"));
+    modal.show();
+}
+
+// Hide modal if needed
+function hideProcessingModal() {
+    let modalEl = document.getElementById("processingModal");
+    let modalInstance = bootstrap.Modal.getInstance(modalEl);
+    if (modalInstance) modalInstance.hide();
+}
+</script>
+
+</body>
+</html>
