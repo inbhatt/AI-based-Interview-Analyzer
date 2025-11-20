@@ -3,13 +3,7 @@ import json
 
 OLLAMA_URL = "http://localhost:11434/api/generate"
 MODEL_NAME = "llama3.1"
-
 def evaluate_answer(question, answer):
-    """
-    Sends the interview question & candidate answer to LLaMA 3.1
-    and returns structured scoring + feedback.
-    """
-
     prompt = f"""
     You are an AI interview evaluator.
 
@@ -17,7 +11,7 @@ def evaluate_answer(question, answer):
     1. Correctness
     2. Completeness
     3. Relevance
-    4. Confidence (clarity, hesitation, filler words, uncertainty)
+    4. Confidence
     5. Communication quality
 
     Interview Question: {question}
@@ -26,36 +20,33 @@ def evaluate_answer(question, answer):
     Return ONLY a JSON object in this exact format:
 
     {{
-        "is_correct": true/false,
-        "content_score": number (0-100),
-        "confidence_score": number (0-100),
-        "overall_score": number (0-100),
-        "mistakes": ["list the mistakes"],
-        "feedback": "short paragraph feedback"
+      "confidence_score": number,
+      "content_score": number,
+      "overall_score": number,
+      "feedback": "string",
+      "mistakes": ["list", "of", "strings"]
     }}
     """
 
-    response = requests.post(
-        OLLAMA_URL,
-        json={
-            "model": MODEL_NAME,
-            "prompt": prompt,
-            "stream": False
-        }
-    )
+    payload = {
+        "model": MODEL_NAME,
+        "prompt": prompt,
+        "stream": False
+    }
 
-    raw_text = response.json().get("response", "")
-
-    # Extract JSON from LLM output
     try:
-        data = json.loads(raw_text)
-        return data
-    except json.JSONDecodeError:
+        response = requests.post(OLLAMA_URL, json=payload)
+        data = response.json()
+        raw_output = data.get("response", "").strip()
+
+        return json.loads(raw_output)
+
+    except Exception as e:
+        print("❌ LLaMA Evaluation Error:", e)
         return {
-            "is_correct": False,
-            "content_score": 0,
             "confidence_score": 0,
+            "content_score": 0,
             "overall_score": 0,
-            "mistakes": ["LLM returned invalid JSON"],
-            "feedback": raw_text
+            "feedback": "LLM failed to generate a valid response.",
+            "mistakes": []
         }

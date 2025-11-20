@@ -212,6 +212,9 @@ def upload_video(request):
         absolute_path = default_storage.path(file_path)
         result = analyze_video(absolute_path)
 
+        print("\nVIDEO ANALYSIS RESULT KEYS:", result.keys(), "\n")
+
+
         # 🟩 STEP 2 — (Placeholder) Get transcript from the video
         # TODO: Replace this with your real speech-to-text system
         transcript_text = result.get("transcript", "I am placeholder text because transcript is not implemented yet.")
@@ -228,8 +231,17 @@ def upload_video(request):
         llm_feedback = llm_result.get("feedback", "")
         llm_mistakes = llm_result.get("mistakes", [])
 
+        
         # 🟥 STEP 4 — Combine your model's confidence + LLM score
-        final_confidence = int((result['overall_confidence'] + llm_confidence) / 2)
+        video_conf = result.get("overall_score") or \
+                    result.get("overall_confidence") or \
+                    result.get("confidence") or \
+                    result.get("score") or \
+                    0  # fallback if none found
+
+        final_confidence = int((video_conf + llm_confidence) / 2)
+
+
 
         # 🟦 STEP 5 — Save everything in DB
         AnalysisResult.objects.create(
@@ -418,29 +430,24 @@ Return JSON ONLY in this exact format:
         print("❌ FULL ANALYSIS ERROR:", e)
         return {"error": "processing_failed", "details": str(e)}
 
-
 def extract_audio(video_path):
     try:
-        audio_path = f"{video_path}_audio.wav"
+        base = os.path.splitext(video_path)[0]
+        audio_path = base + "_audio.wav"
 
-        cmd = [
-            "ffmpeg",
-            "-y",
-            "-i", video_path,
+        # If file already exists, delete it
+        if os.path.exists(audio_path):
+            os.remove(audio_path)
+
+        command = [
+            "ffmpeg", "-i", video_path,
             "-ac", "1",
             "-ar", "16000",
-            audio_path
+            audio_path,
+            "-y"
         ]
 
-        result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-
-        # Debug logs
-        print("FFMPEG STDERR:", result.stderr.decode())
-
-        # Check if file really exists
-        if not os.path.exists(audio_path):
-            print("❌ AUDIO FILE NOT CREATED")
-            return None
+        subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
         return audio_path
 
