@@ -2,72 +2,20 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>{{ target_user.name }}'s Performance Report</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Performance Report: {{ target_user.name }}</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Use the same Chart.js major version as old file for parity -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.0/dist/chart.min.js"></script>
     <style>
-        /* Base styles and animations */
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        @keyframes slideInLeft {
-            from {
-                opacity: 0;
-                transform: translateX(-30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateX(0);
-            }
-        }
-
-        @keyframes slideInRight {
-            from {
-                opacity: 0;
-                transform: translateX(30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateX(0);
-            }
-        }
-
-        @keyframes pulse {
-            0%, 100% {
-                transform: scale(1);
-            }
-            50% {
-                transform: scale(1.05);
-            }
-        }
-
-        @keyframes shimmer {
-            0% {
-                background-position: -1000px 0;
-            }
-            100% {
-                background-position: 1000px 0;
-            }
-        }
-
-        @keyframes float {
-            0%, 100% {
-                transform: translateY(0);
-            }
-            50% {
-                transform: translateY(-10px);
-            }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
 
         body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             position: relative;
@@ -82,516 +30,895 @@
             width: 100%;
             height: 100%;
             background: 
-                radial-gradient(circle at 20% 50%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
-                radial-gradient(circle at 80% 80%, rgba(99, 102, 241, 0.3) 0%, transparent 50%),
-                radial-gradient(circle at 40% 20%, rgba(168, 85, 247, 0.2) 0%, transparent 50%);
+                radial-gradient(circle at 20% 50%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(255, 255, 255, 0.1) 0%, transparent 50%);
             pointer-events: none;
-            z-index: 1;
+            z-index: 0;
         }
 
-        .report-container { 
+        .report-container {
             padding: 40px;
             position: relative;
-            z-index: 2;
-            animation: fadeIn 0.8s ease-out;
+            z-index: 1;
+            max-width: 1400px;
+            margin: 0 auto;
         }
 
-        .card { 
-            margin-bottom: 25px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.15);
-            border-radius: 15px;
-            border: none;
-            overflow: hidden;
-            background: rgba(255, 255, 255, 0.95);
+        .report-header {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.9) 100%);
             backdrop-filter: blur(10px);
-            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            animation: fadeIn 0.6s ease-out backwards;
-        }
-
-        .card:nth-child(1) { animation-delay: 0.1s; }
-        .card:nth-child(2) { animation-delay: 0.2s; }
-        .card:nth-child(3) { animation-delay: 0.3s; }
-
-        .card:hover {
-            transform: translateY(-8px) scale(1.02);
-            box-shadow: 0 20px 60px rgba(0,0,0,0.25);
-        }
-
-        .card-header {
-            padding: 20px;
-            border: none;
+            border-radius: 20px;
+            padding: 40px;
+            margin-bottom: 30px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            animation: slideDown 0.8s ease-out;
             position: relative;
             overflow: hidden;
         }
 
-        .card-header::before {
+        .report-header::before {
             content: '';
             position: absolute;
             top: 0;
             left: -100%;
             width: 100%;
             height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
-            transition: left 0.5s;
+            background: linear-gradient(90deg, transparent, rgba(102, 126, 234, 0.1), transparent);
+            animation: shimmer 3s infinite;
         }
 
-        .card:hover .card-header::before {
-            left: 100%;
+        @keyframes shimmer {
+            0% { left: -100%; }
+            100% { left: 100%; }
         }
 
-        .card-header h5 {
-            margin: 0;
-            font-weight: 600;
-            letter-spacing: 0.5px;
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-30px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
-        .header-bg { 
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-        }
-
-        .bg-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
-        }
-
-        .bg-success {
-            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%) !important;
-        }
-
-        .bg-info {
-            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%) !important;
-        }
-
-        h1 {
-            color: white;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
-            font-weight: 700;
-            animation: slideInLeft 0.8s ease-out;
-            padding: 20px 0;
-        }
-
-        .btn {
-            transition: all 0.3s ease;
-            font-weight: 500;
-            border-radius: 8px;
-            padding: 10px 24px;
-        }
-
-        .btn-secondary {
-            background: rgba(255, 255, 255, 0.2);
-            border: 2px solid rgba(255, 255, 255, 0.8);
-            color: white;
-            backdrop-filter: blur(10px);
-            animation: slideInLeft 0.6s ease-out;
-        }
-
-        .btn-secondary:hover {
-            background: white;
-            color: #667eea;
-            transform: translateX(-5px);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-        }
-
-        .btn-light {
-            border-radius: 6px;
-            font-weight: 600;
-            transition: all 0.3s ease;
-        }
-
-        .btn-light:hover {
-            transform: scale(1.1);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-        }
-
-        .table {
-            margin-bottom: 0;
-        }
-
-        .table thead th {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+        .back-btn {
+            background: linear-gradient(135deg, #2193b0 0%, #6dd5ed 100%);
             border: none;
-            padding: 15px;
+            color: white;
             font-weight: 600;
-            letter-spacing: 0.5px;
-        }
-
-        .table tbody tr {
+            border-radius: 10px;
+            padding: 12px 24px;
             transition: all 0.3s ease;
-        }
-
-        .table tbody tr:hover {
-            background: linear-gradient(90deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
-            transform: scale(1.02);
-        }
-
-        .table td {
-            padding: 15px;
-            vertical-align: middle;
-            border-color: rgba(0,0,0,0.05);
-        }
-
-        .text-primary {
-            color: #667eea !important;
-            animation: pulse 2s ease-in-out infinite;
-        }
-
-        .fw-bold.fs-5 {
-            text-shadow: 0 2px 4px rgba(102, 126, 234, 0.2);
-        }
-
-        .alert-info {
-            background: rgba(255, 255, 255, 0.9);
-            border: 2px solid rgba(102, 126, 234, 0.5);
-            border-radius: 12px;
-            color: #667eea;
-            font-weight: 500;
-            animation: fadeIn 0.8s ease-out;
-        }
-
-        .row > div {
-            animation: fadeIn 0.8s ease-out backwards;
-        }
-
-        .row > div:first-child {
-            animation: slideInLeft 0.8s ease-out backwards;
-            animation-delay: 0.4s;
-        }
-
-        .row > div:last-child {
-            animation: slideInRight 0.8s ease-out backwards;
-            animation-delay: 0.4s;
-        }
-
-        .modal-content {
-            border-radius: 15px;
-            border: none;
-            overflow: hidden;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-        }
-
-        .modal-header {
-            padding: 25px;
-            border: none;
-        }
-
-        .modal-body {
-            padding: 30px;
-        }
-
-        .modal-body-chart { 
-            height: 70vh;
-            width: 100%;
-            position: relative;
-        }
-
-        .btn-close-white {
-            transition: transform 0.3s ease;
-        }
-
-        .btn-close-white:hover {
-            transform: rotate(90deg) scale(1.2);
-        }
-
-        canvas {
-            transition: opacity 0.3s ease;
-        }
-
-        .card-body {
-            padding: 25px;
-        }
-
-        /* Scrollbar styling */
-        ::-webkit-scrollbar {
-            width: 10px;
-        }
-
-        ::-webkit-scrollbar-track {
-            background: rgba(255, 255, 255, 0.1);
-        }
-
-        ::-webkit-scrollbar-thumb {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border-radius: 5px;
-        }
-
-        ::-webkit-scrollbar-thumb:hover {
-            background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
-        }
-
-        /* Loading animation for charts */
-        .card-body canvas {
-            animation: fadeIn 1s ease-out 0.5s backwards;
-        }
-
-        /* Floating animation for enlarge buttons */
-        .btn-light span {
+            text-decoration: none;
             display: inline-block;
-            transition: transform 0.3s ease;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 15px rgba(33, 147, 176, 0.3);
         }
 
-        .btn-light:hover span {
-            animation: float 1s ease-in-out infinite;
+        .back-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 25px rgba(33, 147, 176, 0.4);
+            color: white;
         }
 
-        /* Modal entrance animation */
-        .modal.show .modal-dialog {
-            animation: fadeIn 0.3s ease-out;
+        .report-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+            animation: fadeInUp 0.8s ease-out 0.2s both;
         }
 
-        /* Table data emphasis */
-        .table tbody td:nth-child(2),
-        .table tbody td:nth-child(4) {
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .report-subtitle {
+            color: #666;
+            font-size: 1.1rem;
+            animation: fadeInUp 0.8s ease-out 0.3s both;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+            animation: fadeInUp 0.8s ease-out 0.4s both;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.9) 100%);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+            border: 2px solid transparent;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #2193b0, #6dd5ed);
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform 0.4s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+            border-color: rgba(33, 147, 176, 0.3);
+        }
+
+        .stat-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .stat-icon {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            display: block;
+            animation: bounce 2s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 0.95rem;
             font-weight: 600;
-            color: #667eea;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
         }
 
-        /* Responsive enhancements */
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #2193b0 0%, #6dd5ed 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            line-height: 1;
+        }
+
+        .summary-section {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.9) 100%);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 15px 45px rgba(0, 0, 0, 0.2);
+            animation: fadeInUp 0.8s ease-out 0.5s both;
+        }
+
+        .section-title {
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: #2193b0;
+            margin-bottom: 20px;
+            position: relative;
+            padding-bottom: 12px;
+        }
+
+        .section-title::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 60px;
+            height: 4px;
+            background: linear-gradient(90deg, #2193b0, #6dd5ed);
+            border-radius: 2px;
+        }
+
+        .summary-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            overflow: hidden;
+            border-radius: 12px;
+        }
+
+        .summary-table thead {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .summary-table th {
+            padding: 18px;
+            font-weight: 600;
+            text-align: left;
+            font-size: 1rem;
+        }
+
+        .summary-table tbody tr {
+            background: white;
+            transition: all 0.3s ease;
+        }
+
+        .summary-table tbody tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+
+        .summary-table tbody tr:hover {
+            background: linear-gradient(90deg, rgba(33, 147, 176, 0.1) 0%, transparent 100%);
+            transform: translateX(5px);
+        }
+
+        .summary-table td {
+            padding: 16px 18px;
+            color: #333;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .score-badge {
+            display: inline-block;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            background: linear-gradient(135deg, #2193b0 0%, #6dd5ed 100%);
+            color: white;
+            box-shadow: 0 4px 10px rgba(33, 147, 176, 0.3);
+        }
+
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 30px;
+            animation: fadeInUp 0.8s ease-out 0.6s both;
+        }
+
+        .chart-card {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.9) 100%);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 15px 45px rgba(0, 0, 0, 0.2);
+            transition: all 0.4s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .chart-card::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: linear-gradient(135deg, #2193b0, #6dd5ed, #667eea, #764ba2);
+            border-radius: 20px;
+            z-index: -1;
+            opacity: 0;
+            transition: opacity 0.4s ease;
+        }
+
+        .chart-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .chart-card:hover::before {
+            opacity: 0.2;
+        }
+
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .chart-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #2193b0;
+        }
+
+        .enlarge-btn {
+            background: linear-gradient(135deg, #2193b0 0%, #6dd5ed 100%);
+            border: none;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 10px rgba(33, 147, 176, 0.3);
+        }
+
+        .enlarge-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 15px rgba(33, 147, 176, 0.4);
+        }
+
+        .chart-wrapper {
+            position: relative;
+            height: 350px;
+        }
+
+        .insights-section {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.9) 100%);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            margin-top: 30px;
+            box-shadow: 0 15px 45px rgba(0, 0, 0, 0.2);
+            animation: fadeInUp 0.8s ease-out 0.7s both;
+        }
+
+        .insights-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .insight-card {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-left: 4px solid #2193b0;
+            border-radius: 12px;
+            padding: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .insight-card:hover {
+            transform: translateX(10px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .insight-icon {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+
+        .insight-title {
+            font-weight: 700;
+            color: #2193b0;
+            margin-bottom: 8px;
+            font-size: 1.1rem;
+        }
+
+        .insight-text {
+            color: #666;
+            line-height: 1.6;
+        }
+
+        #enlargeModal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            padding: 20px;
+        }
+
+        #enlargeModal.active {
+            display: flex;
+        }
+
+        .modal-content-wrapper {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 90%;
+            max-height: 90%;
+            position: relative;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        }
+
+        .close-modal {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
+            border: none;
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+        }
+
+        .close-modal:hover {
+            transform: rotate(90deg) scale(1.1);
+            box-shadow: 0 4px 15px rgba(255, 107, 107, 0.4);
+        }
+
+        #enlargeCanvas {
+            width: 100%;
+            height: 600px;
+            display: block;
+        }
+
         @media (max-width: 768px) {
             .report-container {
                 padding: 20px;
             }
 
-            h1 {
+            .report-title {
                 font-size: 1.8rem;
             }
 
-            .card {
-                margin-bottom: 20px;
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .insights-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .chart-wrapper {
+                height: 300px;
+            }
+
+            #enlargeCanvas {
+                height: 400px;
             }
         }
     </style>
 </head>
 <body>
-    
-    <div class="container report-container">
+
+<div class="report-container">
+    <div class="report-header">
         {% if is_admin %}
-            <a href="{% url 'admin_dashboard' %}" class="btn btn-secondary mb-4">&larr; Back to Dashboard</a>
+            <a href="{% url 'admin_dashboard' %}" class="back-btn">← Back to Dashboard</a>
         {% else %}
-            <a href="{% url 'home' %}" class="btn btn-secondary mb-4">&larr; Back to Home</a>
+            <a href="{% url 'home' %}" class="back-btn">← Back to Home</a>
         {% endif %}
-        
-        <h1 class="mb-4">Performance Report: **{{ target_user.name }}**</h1>
-        
-        {% if not report.summary %}
-            <div class="alert alert-info mt-5">
+
+        <h1 class="report-title">📊 Performance Report: {{ target_user.name }}</h1>
+        <p class="report-subtitle">Comprehensive Analysis Across {{ report.summary.total_runs|default:0 }} Interview Session{% if report.summary.total_runs|default:0 > 1 %}s{% endif %}</p>
+    </div>
+
+    {% if not report.summary %}
+        <div class="summary-section">
+            <div class="alert alert-info">
                 No analysis results found for this user. Please submit a video first.
             </div>
-        {% else %}
-
-            <div class="card">
-                <div class="card-header bg-primary text-white">
-                    <h5>Average Performance Summary (Across {{ report.summary.total_runs }} Runs)</h5>
-                </div>
-                <div class="card-body">
-                    <table class="table table-bordered">
-                        <thead>
-                            <tr>
-                                <th>Metric</th>
-                                <th>Average Score</th>
-                                <th>Metric</th>
-                                <th>Average Score</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td>**Overall Confidence**</td>
-                                <td class="fw-bold fs-5 text-primary">{{ report.summary.avg_overall|default_if_none:"N/A" }}%</td>
-                                <td>**Facial Expression**</td>
-                                <td>{{ report.summary.avg_expression|default_if_none:"N/A" }}%</td>
-                            </tr>
-                            <tr>
-                                <td>**Eye Movement**</td>
-                                <td>{{ report.summary.avg_eye|default_if_none:"N/A" }}%</td>
-                                <td>**Speech Quality**</td>
-                                <td>{{ report.summary.avg_speech|default_if_none:"N/A" }}%</td>
-                            </tr>
-                            <tr>
-                                <td>**Hand Gesture**</td>
-                                <td>{{ report.summary.avg_gesture|default_if_none:"N/A" }}%</td>
-                                <td>**Total Videos Analyzed**</td>
-                                <td>{{ report.summary.total_runs }}</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <div class="row">
-                <div class="col-md-7">
-                    <div class="card">
-                        <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
-                            <h5>Historical Trend of Last 5 Runs</h5>
-                            <button type="button" class="btn btn-light btn-sm" data-bs-toggle="modal" data-bs-target="#historicalModal">
-                                <span style="font-size: 1.2rem;">&boxplus;</span> Enlarge
-                            </button>
-                        </div>
-                        <div class="card-body">
-                            <canvas id="historicalChart"></canvas>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="col-md-5">
-                    <div class="card">
-                        <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
-                            <h5>Overall Expression Distribution (Time in Seconds)</h5>
-                            <button type="button" class="btn btn-light btn-sm" data-bs-toggle="modal" data-bs-target="#expressionModal">
-                                <span style="font-size: 1.2rem;">&boxplus;</span> Enlarge
-                            </button>
-                        </div>
-                        <div class="card-body">
-                            <canvas id="expressionPieChart"></canvas>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        {% endif %}
-    </div>
-    
-    <div class="modal fade" id="historicalModal" tabindex="-1" aria-labelledby="historicalModalLabel" aria-hidden="true">
-      <div class="modal-dialog modal-xl">
-        <div class="modal-content">
-          <div class="modal-header header-bg">
-            <h5 class="modal-title" id="historicalModalLabel">Historical Trend - Enlarged View</h5>
-            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-          </div>
-          <div class="modal-body">
-            <div class="modal-body-chart">
-                <canvas id="historicalChartLarge"></canvas>
-            </div>
-          </div>
         </div>
-      </div>
-    </div>
-
-    <div class="modal fade" id="expressionModal" tabindex="-1" aria-labelledby="expressionModalLabel" aria-hidden="true">
-      <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-          <div class="modal-header header-bg">
-            <h5 class="modal-title" id="expressionModalLabel">Expression Distribution - Enlarged View</h5>
-            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-          </div>
-          <div class="modal-body">
-            <div class="modal-body-chart">
-                <canvas id="expressionPieChartLarge"></canvas>
+    {% else %}
+    <div class="stats-grid">
+        <div class="stat-card">
+            <span class="stat-icon">🎯</span>
+            <div class="stat-label">Overall Confidence</div>
+            <div class="stat-value">
+                {% if report.summary.avg_overall is not None %}{{ report.summary.avg_overall }}%{% else %}N/A{% endif %}
             </div>
-          </div>
         </div>
-      </div>
+        <div class="stat-card">
+            <span class="stat-icon">👁️</span>
+            <div class="stat-label">Eye Movement</div>
+            <div class="stat-value">
+                {% if report.summary.avg_eye is not None %}{{ report.summary.avg_eye }}%{% else %}N/A{% endif %}
+            </div>
+        </div>
+        <div class="stat-card">
+            <span class="stat-icon">🤝</span>
+            <div class="stat-label">Hand Gestures</div>
+            <div class="stat-value">
+                {% if report.summary.avg_gesture is not None %}{{ report.summary.avg_gesture }}%{% else %}N/A{% endif %}
+            </div>
+        </div>
+        <div class="stat-card">
+            <span class="stat-icon">😊</span>
+            <div class="stat-label">Facial Expression</div>
+            <div class="stat-value">
+                {% if report.summary.avg_expression is not None %}{{ report.summary.avg_expression }}%{% else %}N/A{% endif %}
+            </div>
+        </div>
+        <div class="stat-card">
+            <span class="stat-icon">🎤</span>
+            <div class="stat-label">Speech Quality</div>
+            <div class="stat-value">
+                {% if report.summary.avg_speech is not None %}{{ report.summary.avg_speech }}%{% else %}N/A{% endif %}
+            </div>
+        </div>
+        <div class="stat-card">
+            <span class="stat-icon">📹</span>
+            <div class="stat-label">Total Videos</div>
+            <div class="stat-value">
+                {{ report.summary.total_runs|default:0 }}
+            </div>
+        </div>
     </div>
-    
-    <script>
-        const historyData = {{ report.history_data|safe }};
-        const expressionData = {{ report.total_expressions|default:'{}'|safe }};
-        
-        let historicalChartInstance = null;
-        let expressionChartInstance = null;
-        let historicalChartLargeInstance = null;
-        let expressionChartLargeInstance = null;
 
-        // Configuration and data setup is shared between small and large charts
-        const chartConfigs = {};
+    <div class="summary-section">
+        <h2 class="section-title">📋 Average Performance Summary (Across {{ report.summary.total_runs|default:0 }} Runs)</h2>
+        <table class="summary-table">
+            <thead>
+                <tr>
+                    <th>Metric</th>
+                    <th>Average Score</th>
+                    <th>Metric</th>
+                    <th>Average Score</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>Overall Confidence</strong></td>
+                    <td><span class="score-badge">{% if report.summary.avg_overall is not None %}{{ report.summary.avg_overall }}%{% else %}N/A{% endif %}</span></td>
+                    <td><strong>Facial Expression</strong></td>
+                    <td><span class="score-badge">{% if report.summary.avg_expression is not None %}{{ report.summary.avg_expression }}%{% else %}N/A{% endif %}</span></td>
+                </tr>
+                <tr>
+                    <td><strong>Eye Movement</strong></td>
+                    <td><span class="score-badge">{% if report.summary.avg_eye is not None %}{{ report.summary.avg_eye }}%{% else %}N/A{% endif %}</span></td>
+                    <td><strong>Speech Quality</strong></td>
+                    <td><span class="score-badge">{% if report.summary.avg_speech is not None %}{{ report.summary.avg_speech }}%{% else %}N/A{% endif %}</span></td>
+                </tr>
+                <tr>
+                    <td><strong>Hand Gestures</strong></td>
+                    <td><span class="score-badge">{% if report.summary.avg_gesture is not None %}{{ report.summary.avg_gesture }}%{% else %}N/A{% endif %}</span></td>
+                    <td><strong>Total Videos Analyzed</strong></td>
+                    <td><span class="score-badge">{{ report.summary.total_runs|default:0 }}</span></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
 
-        // Color helper (defined in the previous step)
-        const getPieBackgroundColors = (labels) => labels.map(label => {
-            switch(label.toLowerCase()) {
-                case 'neutral': return '#6c757d'; 
-                case 'happy': return '#28a745'; 
-                case 'sad': return '#0d6efd';   
-                case 'anger': return '#dc3545'; 
-                case 'fear': return '#ffc107';  
-                case 'surprise': return '#17a2b8'; 
-                case 'disgust': return '#6f42c1'; 
-                default: return '#adb5bd'; 
-            }
-        });
+    <div class="charts-grid">
+        <div class="chart-card">
+            <div class="chart-header">
+                <h3 class="chart-title">📈 Historical Trend of Last 5 Runs</h3>
+                <button class="enlarge-btn" data-chart="trendChart">🔍 Enlarge</button>
+            </div>
+            <div class="chart-wrapper">
+                <canvas id="trendChart"></canvas>
+            </div>
+        </div>
 
-        // Function to create the Historical Line Chart configuration
-        function createHistoricalConfig(data) {
-            const labels = data.map(d => d.date);
-            const overallData = data.map(d => d.overall);
-            const expressionDataLine = data.map(d => d.expression);
-            const speechData = data.map(d => d.speech);
+        <div class="chart-card">
+            <div class="chart-header">
+                <h3 class="chart-title">⏱️ Overall Expression Distribution</h3>
+                <button class="enlarge-btn" data-chart="expressionChart">🔍 Enlarge</button>
+            </div>
+            <div class="chart-wrapper">
+                <canvas id="expressionChart"></canvas>
+            </div>
+        </div>
 
-            return {
+        <div class="chart-card">
+            <div class="chart-header">
+                <h3 class="chart-title">📊 Component Performance Comparison</h3>
+                <button class="enlarge-btn" data-chart="radarChart">🔍 Enlarge</button>
+            </div>
+            <div class="chart-wrapper">
+                <canvas id="radarChart"></canvas>
+            </div>
+        </div>
+
+        <div class="chart-card">
+            <div class="chart-header">
+                <h3 class="chart-title">📈 Performance Progress Timeline</h3>
+                <button class="enlarge-btn" data-chart="progressChart">🔍 Enlarge</button>
+            </div>
+            <div class="chart-wrapper">
+                <canvas id="progressChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="insights-section">
+        <h2 class="section-title">💡 Key Performance Insights</h2>
+        <div class="insights-grid">
+            <div class="insight-card">
+                <div class="insight-icon">🌟</div>
+                <div class="insight-title">Strongest Area</div>
+                <div class="insight-text">
+                    Facial Expression shows the highest score at {% if report.summary.avg_expression is not None %}{{ report.summary.avg_expression }}%{% else %}N/A{% endif %}, indicating excellent emotional expression and engagement during interviews.
+                </div>
+            </div>
+            <div class="insight-card">
+                <div class="insight-icon">🎯</div>
+                <div class="insight-title">Areas for Improvement</div>
+                <div class="insight-text">
+                    Eye Movement ({% if report.summary.avg_eye is not None %}{{ report.summary.avg_eye }}%{% else %}N/A{% endif %}) and Hand Gestures ({% if report.summary.avg_gesture is not None %}{{ report.summary.avg_gesture }}%{% else %}N/A{% endif %}) could benefit from focused practice to enhance non-verbal communication skills.
+                </div>
+            </div>
+            <div class="insight-card">
+                <div class="insight-icon">📈</div>
+                <div class="insight-title">Overall Trend</div>
+                <div class="insight-text">
+                    Consistent performance across all metrics with an average overall confidence of {% if report.summary.avg_overall is not None %}{{ report.summary.avg_overall }}%{% else %}N/A{% endif %}, showing steady interview skills.
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<div id="enlargeModal">
+    <div class="modal-content-wrapper">
+        <button class="close-modal">×</button>
+        <canvas id="enlargeCanvas"></canvas>
+    </div>
+</div>
+
+<script>
+    // --- Pass Django context into JS (marked safe) ---
+    const historyData = {{ report.history_data|default:"[]"|safe }};
+    const expressionData = {{ report.total_expressions|default:"{}"|safe }};
+    const summary = {{ report.summary|default:"null"|safe }};
+
+    // container for chart instances
+    const charts = {};
+
+    // helper: pie colors (same mapping as old file)
+    const getPieBackgroundColors = (labels) => labels.map(label => {
+        switch(label.toLowerCase()) {
+            case 'neutral': return '#6c757d'; 
+            case 'happy': return '#28a745'; 
+            case 'sad': return '#0d6efd';   
+            case 'anger': return '#dc3545'; 
+            case 'fear': return '#ffc107';  
+            case 'surprise': return '#17a2b8'; 
+            case 'disgust': return '#6f42c1'; 
+            default: return '#adb5bd'; 
+        }
+    });
+
+    // --- Utility: show friendly fallback when no data ---
+    function showFallback(canvasId, message) {
+        const canvas = document.getElementById(canvasId);
+        if (!canvas) return;
+        const parent = canvas.parentElement;
+        parent.innerHTML = `<div class="text-center p-4">${message}</div>`;
+    }
+
+    // --- Build Historical (trendChart) if historyData exists ---
+    (function initTrendChart(){
+        const ctxEl = document.getElementById('trendChart');
+        if (!ctxEl) return;
+
+        if (historyData && historyData.length > 0) {
+            const labels = historyData.map(d => d.date);
+            const overallData = historyData.map(d => d.overall);
+            const expressionDataLine = historyData.map(d => d.expression);
+            const speechData = historyData.map(d => d.speech);
+
+            const config = {
                 type: 'line',
                 data: {
                     labels: labels,
                     datasets: [
-                        { label: 'Overall Confidence Score', data: overallData, borderColor: '#0d6efd', backgroundColor: 'rgba(13, 110, 253, 0.1)', fill: true, tension: 0.3 },
-                        { label: 'Facial Expression Score', data: expressionDataLine, borderColor: '#198754', backgroundColor: 'transparent', tension: 0.3 },
-                        { label: 'Speech Quality Score', data: speechData, borderColor: '#ffc107', backgroundColor: 'transparent', tension: 0.3 }
+                        { label: 'Overall Confidence', data: overallData, borderColor: '#2193b0', backgroundColor: 'rgba(33, 147, 176, 0.1)', tension: 0.4, fill: true },
+                        { label: 'Facial Expression', data: expressionDataLine, borderColor: '#6dd5ed', backgroundColor: 'rgba(109, 213, 237, 0.1)', tension: 0.4, fill: true },
+                        { label: 'Speech Quality', data: speechData, borderColor: '#667eea', backgroundColor: 'rgba(102, 126, 234, 0.1)', tension: 0.4, fill: true }
                     ]
                 },
-                options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, max: 100, title: { display: true, text: 'Confidence Score (%)' } } } }
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: { y: { beginAtZero: true, max: 100 } }
+                }
             };
+
+            charts.trendChart = new Chart(ctxEl.getContext('2d'), config);
+            // store config for cloning in enlarge modal
+            charts.trendChart._savedConfig = config;
+        } else {
+            showFallback('trendChart', 'No historical run data available.');
         }
+    })();
 
-        // Function to create the Expression Pie Chart configuration
-        function createExpressionConfig(data) {
-            const pieLabels = Object.keys(data);
-            const pieValues = Object.values(data);
-            const backgroundColors = getPieBackgroundColors(pieLabels);
+    // --- Build Expression Chart (doughnut) ---
+    (function initExpressionChart(){
+        const ctxEl = document.getElementById('expressionChart');
+        if (!ctxEl) return;
 
-            return {
-                type: 'pie',
+        if (expressionData && Object.keys(expressionData).length > 0) {
+            const labels = Object.keys(expressionData);
+            const values = Object.values(expressionData);
+            const bg = getPieBackgroundColors(labels);
+
+            const config = {
+                type: 'doughnut',
                 data: {
-                    labels: pieLabels,
+                    labels: labels,
                     datasets: [{
-                        data: pieValues,
-                        backgroundColor: backgroundColors,
-                        hoverOffset: 4
+                        data: values,
+                        backgroundColor: bg,
+                        borderWidth: 3,
+                        borderColor: '#fff'
                     }]
                 },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top' }, title: { display: true, text: 'Time Spent in Each Expression (Seconds)' } } }
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'top' } }
+                }
             };
-        }
-        
-        // --- Initialization on load ---
-        if (historyData.length > 0) {
-            chartConfigs.historical = createHistoricalConfig(historyData);
-            const ctx = document.getElementById('historicalChart').getContext('2d');
-            historicalChartInstance = new Chart(ctx, chartConfigs.historical);
-        }
 
-        if (Object.keys(expressionData).length > 0) {
-            chartConfigs.expression = createExpressionConfig(expressionData);
-            const pieCtx = document.getElementById('expressionPieChart').getContext('2d');
-            expressionChartInstance = new Chart(pieCtx, chartConfigs.expression);
+            charts.expressionChart = new Chart(ctxEl.getContext('2d'), config);
+            charts.expressionChart._savedConfig = config;
+        } else {
+            showFallback('expressionChart', 'No expression distribution data available.');
         }
+    })();
 
-        // --- MODAL LOGIC ---
-        
-        // Historical Modal Logic
-        const historicalModal = document.getElementById('historicalModal');
-        historicalModal.addEventListener('shown.bs.modal', () => {
-            if (historicalChartLargeInstance) {
-                historicalChartLargeInstance.destroy(); // Destroy previous instance if it exists
+    // --- Build Radar Chart (from report.summary) ---
+    (function initRadarChart(){
+        const ctxEl = document.getElementById('radarChart');
+        if (!ctxEl) return;
+
+        // use summary if available; otherwise fallback to zeros
+        const radarData = summary ? [
+            summary.avg_overall || 0,
+            summary.avg_eye || 0,
+            summary.avg_gesture || 0,
+            summary.avg_expression || 0,
+            summary.avg_speech || 0
+        ] : [0,0,0,0,0];
+
+        const config = {
+            type: 'radar',
+            data: {
+                labels: ['Overall', 'Eye Movement', 'Hand Gestures', 'Facial Expression', 'Speech Quality'],
+                datasets: [{
+                    label: 'Current Performance',
+                    data: radarData,
+                    borderColor: '#2193b0',
+                    backgroundColor: 'rgba(33, 147, 176, 0.2)'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: { r: { beginAtZero: true, max: 100 } }
             }
-            // Use a copy of the config and set the aspect ratio options for the large view
-            const largeConfig = { ...chartConfigs.historical };
-            largeConfig.options.maintainAspectRatio = false; // Important for resizing
-            
-            const largeCtx = document.getElementById('historicalChartLarge').getContext('2d');
-            historicalChartLargeInstance = new Chart(largeCtx, largeConfig);
-        });
+        };
 
-        // Expression Modal Logic
-        const expressionModal = document.getElementById('expressionModal');
-        expressionModal.addEventListener('shown.bs.modal', () => {
-            if (expressionChartLargeInstance) {
-                expressionChartLargeInstance.destroy(); // Destroy previous instance if it exists
+        charts.radarChart = new Chart(ctxEl.getContext('2d'), config);
+        charts.radarChart._savedConfig = config;
+    })();
+
+    // --- Build Progress (bar) Chart (from report.summary) ---
+    (function initProgressChart(){
+        const ctxEl = document.getElementById('progressChart');
+        if (!ctxEl) return;
+
+        const barData = summary ? [
+            summary.avg_overall || 0,
+            summary.avg_eye || 0,
+            summary.avg_gesture || 0,
+            summary.avg_expression || 0,
+            summary.avg_speech || 0
+        ] : [0,0,0,0,0];
+
+        const config = {
+            type: 'bar',
+            data: {
+                labels: ['Overall', 'Eye Movement', 'Hand Gestures', 'Facial Expression', 'Speech Quality'],
+                datasets: [{
+                    label: 'Average Score (%)',
+                    data: barData,
+                    backgroundColor: [
+                        'rgba(33, 147, 176, 0.8)',
+                        'rgba(109, 213, 237, 0.8)',
+                        'rgba(102, 126, 234, 0.8)',
+                        'rgba(118, 75, 162, 0.8)',
+                        'rgba(255, 159, 64, 0.8)'
+                    ],
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: { y: { beginAtZero: true, max: 100 } },
+                plugins: { legend: { display: false } }
             }
-            // Use a copy of the config and set the aspect ratio options for the large view
-            const largeConfig = { ...chartConfigs.expression };
-            largeConfig.options.maintainAspectRatio = false; // Important for resizing
+        };
 
-            const largeCtx = document.getElementById('expressionPieChartLarge').getContext('2d');
-            expressionChartLargeInstance = new Chart(largeCtx, chartConfigs.expression);
+        charts.progressChart = new Chart(ctxEl.getContext('2d'), config);
+        charts.progressChart._savedConfig = config;
+    })();
+
+    // --- Generic enlarge modal logic (clones chart config into enlarge canvas) ---
+    let enlargedChart = null;
+    const enlargeModal = document.getElementById('enlargeModal');
+    const enlargeCanvas = document.getElementById('enlargeCanvas');
+
+    document.querySelectorAll('.enlarge-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const chartId = this.getAttribute('data-chart');
+            const sourceChart = charts[chartId];
+
+            if (!sourceChart || !sourceChart._savedConfig) return;
+
+            // destroy previous enlarged chart if exists
+            if (enlargedChart) {
+                try { enlargedChart.destroy(); } catch(e) { /* ignore */ }
+                enlargedChart = null;
+            }
+
+            // deep-clone config to avoid mutating original
+            const clonedConfig = JSON.parse(JSON.stringify(sourceChart._savedConfig));
+
+            // show modal (we're using the simple .active class approach from Part 1)
+            enlargeModal.classList.add('active');
+
+            // create chart on enlargeCanvas
+            const ctx = enlargeCanvas.getContext('2d');
+            // clear canvas size to ensure Chart.js resizes properly
+            ctx.canvas.width = ctx.canvas.clientWidth;
+            ctx.canvas.height = ctx.canvas.clientHeight;
+            enlargedChart = new Chart(ctx, clonedConfig);
         });
-        
-    </script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    });
+
+    // close modal (button)
+    const closeModalBtn = document.querySelector('.close-modal');
+    if (closeModalBtn) {
+        closeModalBtn.addEventListener('click', function() {
+            enlargeModal.classList.remove('active');
+            if (enlargedChart) {
+                try { enlargedChart.destroy(); } catch(e) {}
+                enlargedChart = null;
+            }
+        });
+    }
+
+    // click outside to close
+    if (enlargeModal) {
+        enlargeModal.addEventListener('click', function(e) {
+            if (e.target === this) {
+                this.classList.remove('active');
+                if (enlargedChart) {
+                    try { enlargedChart.destroy(); } catch(e) {}
+                    enlargedChart = null;
+                }
+            }
+        });
+    }
+
+    // --- safety: if Chart.js fails to load or canvas not found, show graceful messages ---
+    window.addEventListener('error', function(ev) {
+        // If Chart.js caused an error, we won't spam — show fallback text in each canvas parent
+        ['trendChart', 'expressionChart', 'radarChart', 'progressChart'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el && (!el._chartInitialized || !el.getContext)) {
+                const parent = el.parentElement;
+                if (parent) parent.innerHTML = '<div class="text-center p-3">Chart unavailable.</div>';
+            }
+        });
+    });
+
+</script>
+
+<!-- Bootstrap JS (bundle including modal support) -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
 </body>
 </html>

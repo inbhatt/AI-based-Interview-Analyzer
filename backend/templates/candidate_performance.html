@@ -376,11 +376,14 @@
         .modal-content {
             border-radius: 15px;
             background: rgba(255, 255, 255, 0.98);
+            color: white !important;
+
         }
 
         .modal-header {
             background: linear-gradient(135deg, #2193b0 0%, #6dd5ed 100%);
-            color: white;
+            color: white !important;
+
             border-radius: 15px 15px 0 0;
         }
 
@@ -407,6 +410,11 @@
                 align-items: flex-start;
             }
         }
+        #speechModal .modal-header *,
+#speechModal .modal-header {
+    color: white !important;
+}
+
     </style>
 </head>
 
@@ -496,11 +504,16 @@
                     <ul class="list-unstyled small">
                         <li>
                             <span><a class="speech-link" data-result="{{ result.id }}">View Q&A Details</a></span>
-                            <span class="badge">
-                                {% with qa_list=result.speech_details|safe %}
-                                    {% if qa_list != "[]" %}View{% else %}None{% endif %}
-                                {% endwith %}
-                            </span>
+                            {% with qa_list=result.speech_details|safe %}
+                                {% if qa_list != "[]" %}
+                                    <span class="badge speech-link" data-result="{{ result.id }}" style="cursor:pointer;">
+                                        View
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-secondary">None</span>
+                                {% endif %}
+                            {% endwith %}
+
                         </li>
                     </ul>
 
