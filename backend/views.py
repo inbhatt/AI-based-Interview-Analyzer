@@ -2,6 +2,7 @@ import os
 import cv2
 import numpy as np
 import mediapipe as mp
+import requests
 import speech_recognition as sr
 import nltk
 import re
@@ -11,17 +12,17 @@ import subprocess
 from deepface import DeepFace
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse, HttpRequest, HttpResponse
+from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
 from datetime import datetime
-from django.db.models import Avg
 from django.contrib import messages
-# 🚨 UPDATED IMPORTS 🚨
-from .models import Expression, Eyes, HandsExpression, Speech, User, AnalysisResult 
+from .models import User, AnalysisResult
 from django.db.models import Avg, Count
-import random
-from django.http import FileResponse
+
+from .punctuation import restore_punctuation
+from .qa_extractor import extract_qa_with_llama
 
 # Load NLP data
 nltk.download("punkt")
@@ -32,10 +33,10 @@ mp_hands = mp.solutions.hands
 
 # Confidence Calculation Weights
 CONF_WEIGHTS = {
-    "expression": 0.4,
-    "eye_movement": 0.2,
-    "speech": 0.2,
-    "gesture": 0.2
+    "expression": 0.30,
+    "eye_movement": 0.20,
+    "speech": 0.35,
+    "gesture": 0.15
 }
 
 # ==========================================================
@@ -211,7 +212,7 @@ def upload_video(request):
             eye_movement_confidence=result['eye_movement_confidence'],
             speech_confidence=result['speech_confidence'],
             hand_gesture_confidence=result['hand_gesture_confidence'],
-            
+            speech_details=json.dumps(result.get("qa_analysis", [])),
             detailed_results=json.dumps(result) # Store the full analysis dictionary
         )
 
@@ -223,7 +224,7 @@ def upload_video(request):
     return JsonResponse({"error": "Invalid request"}, status=400)
 
 
-def analyze_video(video_path):
+'''def analyze_video(video_path):
     """
     MOCKED FUNCTION: Returns random analysis results for the demo.
     """
@@ -279,119 +280,268 @@ def analyze_video(video_path):
         "speech_confidence": speech_conf,
         "hand_gesture_confidence": hand_conf,
         "overall_confidence": overall_confidence,
-    }
-"""def analyze_video(video_path):
+        "qa_analysis": []
+    }'''
+def format_time(dt):
+    """Helper function to format datetime"""
+    return dt.strftime("%Y-%m-%d %H:%M:%S")
+
+
+def analyze_speech_with_llama(video_path):
+    """
+    Extracts audio, restores punctuation, identifies Q&A pairs,
+    and evaluates answers using Llama via Ollama.
+    Returns overall speech confidence and full Q&A list.
+    """
+    recognizer = sr.Recognizer()
+    audio_path = os.path.join(os.path.dirname(video_path), "audio.wav")
+
+    # STEP 1 — Extract audio from video
+    command = f'ffmpeg -i "{video_path}" -vn -acodec pcm_s16le -ar 16000 -ac 1 "{audio_path}" -y'
+    process = subprocess.run(command, shell=True, capture_output=True, text=True)
+
+    if process.returncode != 0 or not os.path.exists(audio_path):
+        print("FFmpeg failed to extract audio.")
+        return 70, []
+
+    try:
+        # STEP 2 — Transcribe speech
+        with sr.AudioFile(audio_path) as source:
+            audio_data = recognizer.record(source)
+            raw_text = recognizer.recognize_google(audio_data)
+
+        print(f"🗣️ Recognized Speech (Raw): {raw_text}")
+
+        # STEP 3 — Punctuate using multilingual model
+        punctuated_text = restore_punctuation(raw_text)
+        print(f"✍️ After Punctuation: {punctuated_text}")
+
+        # STEP 4 — Run Llama to extract Q&A and score
+        qa_results = extract_qa_with_llama(punctuated_text)
+
+        # STEP 5 — Compute average confidence score
+        if qa_results:
+            avg_score = sum(q["score"] for q in qa_results) / len(qa_results)
+        else:
+            avg_score = 70  # Fallback
+
+        # Clean up temp audio
+        os.remove(audio_path)
+
+        return round(avg_score, 2), qa_results
+
+    except Exception as e:
+        print(f"Speech analysis error: {e}")
+        return 60, []
+
+
+def analyze_video(video_path):
+    """
+    Comprehensive video analysis including facial expressions,
+    eye movement, hand gestures, and speech evaluation.
+    """
     cap = cv2.VideoCapture(video_path)
+
+    if not cap.isOpened():
+        print("Error: Could not open video file.")
+        return get_default_results()
+
     total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-    fps = cap.get(cv2.CAP_PROP_FPS) # Use cap.get directly
-    video_duration = total_frames / fps if fps > 0 else 1  # Use fps for accurate duration
+    fps = cap.get(cv2.CAP_PROP_FPS)
+    video_duration = total_frames / fps if fps > 0 else 1
 
     start_time = datetime.now()
-    print(f"Starting processing. Current Time: {format_time(start_time)}")
+    print(f"Starting video analysis. Time: {format_time(start_time)}")
+    print(f"Video: {total_frames} frames, {fps} fps, {video_duration:.2f}s duration")
 
+    # Initialize counters
     frame_count = 0
-    expression_counts = {} # Frame counts (used temporarily for calculation)
-    eyes_down_count = 0
-    eyes_forward_count = 0
-    no_hand_movement_count = 0
-    hand_movement_count = 0
+    expression_counts = {}
+    expression_seconds = {}
 
-    face_mesh = mp_face_mesh.FaceMesh()
-    hands = mp_hands.Hands(min_detection_confidence=0.5, min_tracking_confidence=0.5)
+    # Eye tracking
+    eyes_forward_count = 0
+    eyes_down_count = 0
+    eyes_away_count = 0
+
+    # Hand gesture tracking
+    hand_present_count = 0
+    hand_movement_detected = 0
+    previous_hand_positions = []
+
+    # Initialize MediaPipe
+    face_mesh = mp_face_mesh.FaceMesh(
+        max_num_faces=1,
+        refine_landmarks=True,
+        min_detection_confidence=0.5,
+        min_tracking_confidence=0.5
+    )
+    hands = mp_hands.Hands(
+        max_num_hands=2,
+        min_detection_confidence=0.5,
+        min_tracking_confidence=0.5
+    )
+
+    # Process every Nth frame for efficiency (adjust based on video length)
+    frame_skip = max(1, int(fps / 5)) if fps > 0 else 1  # Process ~5 frames per second
 
     while cap.isOpened():
-        # ... (rest of the frame processing loop remains the same) ...
         ret, frame = cap.read()
         if not ret:
             break
 
         frame_count += 1
+
+        # Skip frames for efficiency
+        if frame_count % frame_skip != 0:
+            continue
+
         rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        h, w, _ = frame.shape
 
-        # Facial Expression Detection
+        # ===== FACIAL EXPRESSION DETECTION =====
         try:
-            analysis = DeepFace.analyze(rgb_frame, actions=["emotion"], enforce_detection=False)
-            if analysis:
-                expression = analysis[0]["dominant_emotion"]
-                expression_counts[expression] = expression_counts.get(expression, 0) + 1
-        except Exception as e:
-            pass # Keep silent error to prevent massive logs
+            analysis = DeepFace.analyze(
+                rgb_frame,
+                actions=["emotion"],
+                enforce_detection=False,
+                detector_backend='opencv'
+            )
 
-        # Eye Movement Detection
-        # ... (Eye movement and Hand gesture code remains the same) ...
+            if analysis and len(analysis) > 0:
+                expression = analysis[0]["dominant_emotion"]
+                # Normalize expression names to match database
+                expression = expression.lower()
+                expression_counts[expression] = expression_counts.get(expression, 0) + 1
+
+        except Exception as e:
+            pass  # Continue if face detection fails for this frame
+
+        # ===== EYE MOVEMENT DETECTION =====
+        face_results = face_mesh.process(rgb_frame)
 
         if face_results.multi_face_landmarks:
             for face_landmarks in face_results.multi_face_landmarks:
-                left_eye = face_landmarks.landmark[159].y
-                right_eye = face_landmarks.landmark[145].y
-                nose = face_landmarks.landmark[1].y
+                # Eye landmarks (MediaPipe Face Mesh indices)
+                left_eye_center = face_landmarks.landmark[468]  # Left eye center
+                right_eye_center = face_landmarks.landmark[473]  # Right eye center
+                nose_tip = face_landmarks.landmark[1]  # Nose tip
 
-                if left_eye > nose and right_eye > nose:
+                # Calculate eye direction based on vertical position
+                avg_eye_y = (left_eye_center.y + right_eye_center.y) / 2
+
+                # Determine gaze direction
+                if avg_eye_y > nose_tip.y + 0.03:  # Looking down
                     eyes_down_count += 1
-                else:
+                elif abs(avg_eye_y - nose_tip.y) < 0.03:  # Looking forward
                     eyes_forward_count += 1
+                else:  # Looking away/up
+                    eyes_away_count += 1
 
-        # Hand Gesture Detection
+        # ===== HAND GESTURE DETECTION =====
+        hand_results = hands.process(rgb_frame)
+
         if hand_results.multi_hand_landmarks:
-            hand_movement_count += 1
+            hand_present_count += 1
+
+            # Calculate hand movement
+            current_positions = []
+            for hand_landmarks in hand_results.multi_hand_landmarks:
+                # Use wrist position as reference point
+                wrist = hand_landmarks.landmark[0]
+                current_positions.append((wrist.x, wrist.y))
+
+            # Detect movement by comparing with previous frame
+            if previous_hand_positions:
+                for curr, prev in zip(current_positions, previous_hand_positions):
+                    distance = np.sqrt((curr[0] - prev[0]) ** 2 + (curr[1] - prev[1]) ** 2)
+                    if distance > 0.02:  # Movement threshold
+                        hand_movement_detected += 1
+                        break
+
+            previous_hand_positions = current_positions
         else:
-            no_hand_movement_count += 1
+            previous_hand_positions = []
 
     cap.release()
+    face_mesh.close()
+    hands.close()
+
     end_time = datetime.now()
-    # ... (print statements remain the same) ...
+    print(f"Video processing complete. Time: {format_time(end_time)}")
+    print(f"Duration: {(end_time - start_time).total_seconds():.2f}s")
 
-    # 1. Convert Expression Frames to Seconds
-    expression_seconds = {}
-    for expr, count in expression_counts.items():
-        if fps > 0:
-            expression_seconds[expr] = round(count / fps, 2)
-        else:
-            expression_seconds[expr] = 0.0
+    # ===== CALCULATE EXPRESSION CONFIDENCE =====
+    from .models import Expression
 
-    # **Fetching predefined confidence values from the database**
-    # ... (existing code remains the same) ...
     expression_data = {e.name.lower(): e.percentage for e in Expression.objects.all()}
-    eye_data = {e.side.lower(): e.percentage for e in Eyes.objects.all()}
-    hand_data = {h.move.lower(): h.percentage for h in HandsExpression.objects.all()}
 
-    # **2. Calculating confidence scores using seconds**
+    # Convert frame counts to seconds
+    processed_frames = frame_count // frame_skip
+    for expr, count in expression_counts.items():
+        expression_seconds[expr] = round((count / processed_frames) * video_duration, 2)
+
+    # Calculate weighted expression confidence
     expression_confidence = 0
-    for expr, seconds in expression_seconds.items(): # Iterate over seconds
-        expr_weight = expression_data.get(expr.lower(), 0)  
-        # Calculate time fraction based on seconds / total video duration
-        time_fraction = seconds / video_duration if video_duration else 0
-        expression_confidence += (expr_weight * time_fraction)
-        
-    # Eye Movement confidence calculation remains based on frames/total frames, 
-    # as the confidence is often based on the proportion of time spent looking down vs. total time.
-    eye_movement_confidence = (
-        eye_data.get("forward", 0) * (eyes_forward_count / frame_count)
-        if frame_count else 0
-    )
-    eye_movement_confidence += (
-        eye_data.get("down", 0) * (eyes_down_count / frame_count)
-        if frame_count else 0
-    )
+    total_expression_time = sum(expression_seconds.values())
 
-    hand_gesture_confidence = (
-        hand_data.get("moving", 0) * (hand_movement_count / frame_count)
-        if frame_count else 0
-    )
+    if total_expression_time > 0:
+        for expr, seconds in expression_seconds.items():
+            weight = expression_data.get(expr, 50)  # Default 50 if not in DB
+            time_fraction = seconds / total_expression_time
+            expression_confidence += (weight * time_fraction)
+    else:
+        expression_confidence = 60  # Default if no expressions detected
 
-    # Speech Analysis
-    speech_confidence = analyze_speech(video_path)
+    # ===== CALCULATE EYE MOVEMENT CONFIDENCE =====
+    total_eye_frames = eyes_forward_count + eyes_down_count + eyes_away_count
 
-    # **Weighted Average Calculation**
-    # ... (existing weighted average calculation remains the same) ...
+    if total_eye_frames > 0:
+        # Forward gaze = confident (80%), Down = less confident (40%), Away = least confident (30%)
+        eye_movement_confidence = (
+                (eyes_forward_count / total_eye_frames) * 85 +
+                (eyes_down_count / total_eye_frames) * 50 +
+                (eyes_away_count / total_eye_frames) * 35
+        )
+    else:
+        eye_movement_confidence = 60  # Default
+
+    # ===== CALCULATE HAND GESTURE CONFIDENCE =====
+    if processed_frames > 0:
+        hand_presence_ratio = hand_present_count / processed_frames
+        hand_movement_ratio = hand_movement_detected / processed_frames if hand_present_count > 0 else 0
+
+        # Moderate hand movement is good (too much or too little is less confident)
+        optimal_movement = 0.3  # 30% of frames should show movement
+        movement_score = 100 - abs(hand_movement_ratio - optimal_movement) * 200
+
+        # Presence of hands is positive
+        presence_score = hand_presence_ratio * 100
+
+        hand_gesture_confidence = (movement_score * 0.6 + presence_score * 0.4)
+        hand_gesture_confidence = max(30, min(95, hand_gesture_confidence))  # Clamp between 30-95
+    else:
+        hand_gesture_confidence = 60
+
+    # ===== SPEECH ANALYSIS WITH LLAMA =====
+    print("Starting speech analysis with Llama...")
+    speech_confidence, qa_results = analyze_speech_with_llama(video_path)
+
+    # ===== CALCULATE OVERALL CONFIDENCE =====
     overall_confidence = (
-        (CONF_WEIGHTS["expression"] * expression_confidence) +
-        (CONF_WEIGHTS["eye_movement"] * eye_movement_confidence) +
-        (CONF_WEIGHTS["speech"] * speech_confidence) +
-        (CONF_WEIGHTS["gesture"] * hand_gesture_confidence)
+            (CONF_WEIGHTS["expression"] * expression_confidence) +
+            (CONF_WEIGHTS["eye_movement"] * eye_movement_confidence) +
+            (CONF_WEIGHTS["speech"] * speech_confidence) +
+            (CONF_WEIGHTS["gesture"] * hand_gesture_confidence)
     )
 
-    # 3. Return expression seconds instead of frame counts
+    print(f"\n=== ANALYSIS RESULTS ===")
+    print(f"Expression: {expression_confidence:.2f}%")
+    print(f"Eye Movement: {eye_movement_confidence:.2f}%")
+    print(f"Speech: {speech_confidence:.2f}%")
+    print(f"Hand Gesture: {hand_gesture_confidence:.2f}%")
+    print(f"Overall: {overall_confidence:.2f}%")
+
     return {
         "expression_seconds": expression_seconds,
         "expression_confidence": round(expression_confidence, 2),
@@ -399,64 +549,21 @@ def analyze_video(video_path):
         "speech_confidence": round(speech_confidence, 2),
         "hand_gesture_confidence": round(hand_gesture_confidence, 2),
         "overall_confidence": round(overall_confidence, 2),
+        "qa_analysis": qa_results  # Detailed Q&A evaluation
     }
+
+
+def get_default_results():
+    """Returns default results if video processing fails."""
     return {
-        "expression_seconds": {"happy": 10, "sad": 20},
-        "expression_confidence": round(83.2, 2),
-        "eye_movement_confidence": round(70.5, 2),
-        "speech_confidence": round(20.6, 2),
-        "hand_gesture_confidence": round(65.45, 2),
-        "overall_confidence": round(70.4, 2),
-    }"""
-
-
-import subprocess
-
-def analyze_speech(video_path):
-    recognizer = sr.Recognizer()
-    audio_path = os.path.join(os.path.dirname(video_path), "audio.wav")
-
-    # Extract audio using ffmpeg
-    command = f'ffmpeg -i "{video_path}" -vn -acodec pcm_s16le -ar 16000 -ac 1 "{audio_path}" -y'
-    process = subprocess.run(command, shell=True, capture_output=True, text=True, encoding="utf-8")
-
-    if process.returncode != 0:
-        print("FFmpeg Error:", process.stderr)
-        return 100  # Default confidence if extraction fails
-
-    if not os.path.exists(audio_path):
-        print("Error: Audio file was not created.")
-        return 100  # Default confidence if audio file is missing
-
-    try:
-        with sr.AudioFile(audio_path) as source:
-            audio_data = recognizer.record(source)
-            text = recognizer.recognize_google(audio_data)  # Uncomment for actual speech recognition
-            #text = "so uhh tell me about yourself like the most common you know what I mean job interview question of all time usually the thing that they ask you"
-            print(f"Recognized Speech: {text}")
-
-            # Fetch low-confidence words and their confidence percentages from the database
-            speech_data = {s.word.lower(): s.percentage for s in Speech.objects.all()}
-
-            words_count = len(nltk.word_tokenize(text))
-            if words_count == 0:
-                return 100  # If no words are spoken, assume full confidence
-
-            # Count occurrences of each low-confidence word
-            total_deduction = 0
-            for word, weight in speech_data.items():
-                matches = len(re.findall(rf"\b{word}\b", text, re.IGNORECASE))
-                if matches > 0:
-                    total_deduction += (matches * weight)
-
-            # Normalize confidence to a 0-100 scale
-            speech_confidence = max(0, 100 - total_deduction)
-
-            return round(speech_confidence, 2)
-
-    except Exception as e:
-        print(f"Speech recognition error: {e}")
-        return 100
+        "expression_seconds": {"neutral": 0},
+        "expression_confidence": 60.0,
+        "eye_movement_confidence": 60.0,
+        "speech_confidence": 60.0,
+        "hand_gesture_confidence": 60.0,
+        "overall_confidence": 60.0,
+        "qa_analysis": []
+    }
 
 
 # ----------------------------------------------------------
@@ -484,6 +591,86 @@ def admin_dashboard(request):
 
 
 @admin_required
+def live_recording_page(request, user_id):
+    """
+    Renders the live recording interface for a specific candidate.
+    """
+    try:
+        candidate = User.objects.get(id=user_id, role='candidate')
+    except User.DoesNotExist:
+        messages.error(request, "Candidate not found.")
+        return redirect('admin_dashboard')
+
+    context = {
+        'candidate': candidate,
+        'user_id': user_id,
+    }
+    return render(request, 'live_recording.html', context)
+
+
+@csrf_exempt
+@admin_required
+def save_live_recording(request, user_id):
+    """
+    Receives the recorded video blob from the frontend,
+    saves it, analyzes it, and returns the results.
+    """
+    if request.method != "POST":
+        return JsonResponse({"error": "Invalid request method"}, status=405)
+
+    try:
+        candidate = User.objects.get(id=user_id, role='candidate')
+    except User.DoesNotExist:
+        return JsonResponse({"error": "Candidate not found."}, status=404)
+
+    # Get the video file from request
+    video_file = request.FILES.get('video')
+
+    if not video_file:
+        return JsonResponse({"error": "No video file provided."}, status=400)
+
+    try:
+        # Save the video file
+        now = datetime.now()
+        timestamp_str = now.strftime("%Y%m%d_%H%M%S")
+        file_name = f"live_recording_{user_id}_{timestamp_str}.webm"
+        file_path = default_storage.save(f"backend/videos/{file_name}", ContentFile(video_file.read()))
+
+        print(f"Live recording saved: {file_path}")
+
+        # Analyze the video
+        result = analyze_video(file_path)
+
+        # Save analysis results to database
+        AnalysisResult.objects.create(
+            user=candidate,
+            video_path=file_path,
+            overall_confidence=result['overall_confidence'],
+            expression_confidence=result['expression_confidence'],
+            eye_movement_confidence=result['eye_movement_confidence'],
+            speech_confidence=result['speech_confidence'],
+            hand_gesture_confidence=result['hand_gesture_confidence'],
+            speech_details=json.dumps(result.get("qa_analysis", [])),
+            detailed_results=json.dumps(result)
+        )
+
+        return JsonResponse({
+            "success": True,
+            "message": "Recording analyzed successfully!",
+            "confidence_result": result,
+            "expression_seconds": result.get("expression_seconds", {}),
+            "redirect_url": f"/candidate/{user_id}/performance"
+        })
+
+    except Exception as e:
+        print(f"Error processing live recording: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return JsonResponse({
+            "error": f"An error occurred while processing the recording: {str(e)}"
+        }, status=500)
+
+@admin_required
 def create_candidate_page(request):
     return render(request, 'create_candidate.html')
 
@@ -491,8 +678,14 @@ def create_candidate_page(request):
 @admin_required
 def candidate_performance(request, user_id):
     candidate = get_object_or_404(User, id=user_id, role='candidate')
-    analysis_results = candidate.analysisresult_set.all().order_by('-date_time')
-    
+    analysis_results = [
+        {
+            "obj": r,
+            "local_time": timezone.localtime(r.date_time)
+        }
+        for r in candidate.analysisresult_set.all().order_by('-date_time')
+    ]
+
     context = {
         'candidate': candidate,
         'analysis_results': analysis_results,
@@ -690,13 +883,13 @@ def admin_upload_candidate_video(request, user_id):
                 eye_movement_confidence=analysis_data['eye_movement_confidence'],
                 speech_confidence=analysis_data['speech_confidence'],
                 hand_gesture_confidence=analysis_data['hand_gesture_confidence'],
-                # Store detailed expression data in a JSON/Text field
+                speech_details=json.dumps(analysis_data.get("qa_analysis", [])),
                 detailed_results=json.dumps(analysis_data)
             )
             
             # Redirect to the candidate's performance page after successful upload
             messages.success(request, f"Video uploaded and analyzed successfully for {candidate.name}.")
-            return redirect('candidate_performance', user_id=user_id)
+            return redirect('candidate_performance.html', user_id=user_id)
         
         # If POST request but no file
         messages.error(request, "No video file provided.")

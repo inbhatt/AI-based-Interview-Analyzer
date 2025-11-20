@@ -427,6 +427,18 @@
             color: white;
         }
 
+        .btn-outline-danger {
+            border: 2px solid #dc3545;
+            color: #dc3545;
+            background: transparent;
+        }
+
+        .btn-outline-danger:hover {
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+            border-color: transparent;
+            color: white;
+        }
+
         /* Loading animation for empty state */
         #noResultsRow {
             animation: pulse 2s ease-in-out infinite;
@@ -530,9 +542,10 @@
                                 {% endif %}
                             </td>
                             <td>
-                                <a href="{% url 'candidate_performance' user_id=candidate.id %}" class="btn btn-sm btn-outline-primary me-2">Performance History</a>
-                                <a href="{% url 'report_generator_admin' user_id=candidate.id %}" class="btn btn-sm btn-outline-info">Report Generator</a>
-                                <a href="{% url 'admin_upload_candidate_video' user_id=candidate.id %}" class="btn btn-sm btn-outline-success">Upload Video</a>
+                                <a href="{% url 'candidate_performance' user_id=candidate.id %}" class="btn btn-sm btn-outline-primary">Performance</a>
+                                <a href="{% url 'report_generator_admin' user_id=candidate.id %}" class="btn btn-sm btn-outline-info">Report</a>
+                                <a href="{% url 'admin_upload_candidate_video' user_id=candidate.id %}" class="btn btn-sm btn-outline-success">Upload</a>
+                                <a href="{% url 'live_recording_page' user_id=candidate.id %}" class="btn btn-sm btn-outline-danger">🔴 Live Record</a>
                             </td>
                         </tr>
                         {% empty %}

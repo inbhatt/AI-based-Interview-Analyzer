@@ -24,8 +24,8 @@ urlpatterns = [
     path('create-candidate', views.create_candidate_page, name='create_candidate_page'),
     path('candidate/<int:user_id>/performance', views.candidate_performance, name='candidate_performance'),
     path('candidate/<int:user_id>/upload', views.admin_upload_candidate_video, name='admin_upload_candidate_video'),
-    #path('candidate/<int:user_id>/record', views.admin_record_candidate_video, name='admin_record_candidate_video'),
-    #path('candidate/<int:user_id>/process-live', views.admin_process_live_video, name='admin_process_live_video'),
+    path('live-recording/<int:user_id>/', views.live_recording_page, name='live_recording_page'),
+    path('save-live-recording/<int:user_id>/', views.save_live_recording, name='save_live_recording'),
     
     # Report Generator Paths
     path('reports', views.report_generator, name='report_generator_self'), 
