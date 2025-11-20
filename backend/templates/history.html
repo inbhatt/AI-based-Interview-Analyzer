@@ -50,26 +50,6 @@
             }
         }
 
-        @keyframes scaleIn {
-            from {
-                opacity: 0;
-                transform: scale(0.9);
-            }
-            to {
-                opacity: 1;
-                transform: scale(1);
-            }
-        }
-
-        @keyframes pulse {
-            0%, 100% {
-                transform: scale(1);
-            }
-            50% {
-                transform: scale(1.08);
-            }
-        }
-
         @keyframes shimmer {
             0% {
                 background-position: -1000px 0;
@@ -79,21 +59,40 @@
             }
         }
 
-        @keyframes float {
-            0%, 100% {
-                transform: translateY(0);
+        @keyframes borderFlow {
+            0% {
+                border-left-color: transparent;
+                border-top-color: transparent;
             }
             50% {
-                transform: translateY(-8px);
+                border-left-color: #2193b0;
+                border-top-color: #2193b0;
+            }
+            100% {
+                border-left-color: #2193b0;
+                border-top-color: #2193b0;
+                border-right-color: #2193b0;
+                border-bottom-color: #2193b0;
             }
         }
 
-        @keyframes glow {
-            0%, 100% {
-                box-shadow: 0 0 5px rgba(33, 147, 176, 0.5), 0 0 10px rgba(109, 213, 237, 0.3);
+        @keyframes slideInContent {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
             }
-            50% {
-                box-shadow: 0 0 20px rgba(33, 147, 176, 0.8), 0 0 30px rgba(109, 213, 237, 0.6);
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes highlightRow {
+            from {
+                background: rgba(33, 147, 176, 0);
+            }
+            to {
+                background: rgba(33, 147, 176, 0.08);
             }
         }
 
@@ -155,7 +154,7 @@
         }
 
         .navbar-brand:hover {
-            transform: scale(1.1);
+            transform: translateX(5px);
             text-shadow: 0 0 20px rgba(255, 255, 255, 0.8);
         }
 
@@ -219,39 +218,44 @@
             font-size: 1.2rem;
         }
 
-        /* Card Styles */
+        /* Professional Card Styles - No Zoom */
         .result-card { 
             margin-bottom: 25px;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
-            border-radius: 15px;
-            border: none;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+            border-radius: 12px;
+            border: 2px solid rgba(33, 147, 176, 0.2);
             overflow: hidden;
-            background: rgba(255, 255, 255, 0.95);
+            background: rgba(255, 255, 255, 0.98);
             backdrop-filter: blur(10px);
-            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            animation: scaleIn 0.6s ease-out backwards;
+            transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+            animation: fadeInUp 0.6s ease-out backwards;
             position: relative;
         }
 
+        /* Left accent bar on hover */
         .result-card::before {
             content: '';
             position: absolute;
+            left: 0;
             top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(33, 147, 176, 0.1), transparent);
-            transition: left 0.6s ease;
+            bottom: 0;
+            width: 4px;
+            background: linear-gradient(180deg, #2193b0 0%, #6dd5ed 100%);
+            transform: scaleY(0);
+            transform-origin: top;
+            transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         .result-card:hover::before {
-            left: 100%;
+            transform: scaleY(1);
         }
 
+        /* Subtle background highlight on hover */
         .result-card:hover {
-            transform: translateY(-10px) scale(1.02);
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            animation: glow 2s ease-in-out infinite;
+            background: rgba(255, 255, 255, 1);
+            border-color: rgba(33, 147, 176, 0.4);
+            box-shadow: 0 12px 32px rgba(33, 147, 176, 0.15);
+            transform: translateX(8px);
         }
 
         /* Staggered animation for cards */
@@ -269,10 +273,21 @@
             font-size: 1.1rem;
             position: relative;
             z-index: 1;
+            background: linear-gradient(135deg, #2193b0 0%, #6dd5ed 100%);
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.35s ease;
+        }
+
+        .result-card:hover .card-header {
+            background: linear-gradient(135deg, #1a7a94 0%, #5bc5d9 100%);
         }
 
         .card-body {
             padding: 30px 25px;
+            animation: slideInContent 0.5s ease-out;
         }
 
         .card-body h5 {
@@ -281,6 +296,7 @@
             margin-bottom: 20px;
             position: relative;
             padding-bottom: 10px;
+            font-size: 1rem;
         }
 
         .card-body h5::after {
@@ -288,39 +304,48 @@
             position: absolute;
             bottom: 0;
             left: 0;
-            width: 50px;
+            width: 40px;
             height: 3px;
             background: linear-gradient(90deg, #2193b0, #6dd5ed);
             border-radius: 2px;
+            transition: width 0.35s ease;
+        }
+
+        .result-card:hover .card-body h5::after {
+            width: 60px;
         }
 
         /* Badge Styles */
         .score-badge { 
-            font-size: 1.1rem;
-            padding: 0.5em 1em;
-            border-radius: 10px;
+            font-size: 1.15rem;
+            padding: 0.6em 1.2em;
+            border-radius: 8px;
             font-weight: 700;
-            animation: pulse 2s ease-in-out infinite;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
             transition: all 0.3s ease;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
         }
 
         .score-badge:hover {
-            transform: scale(1.15);
-            animation: none;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
         }
 
         .badge {
             padding: 0.5em 0.9em;
-            border-radius: 8px;
+            border-radius: 6px;
             font-weight: 600;
             transition: all 0.3s ease;
             display: inline-block;
+            background: linear-gradient(135deg, #2193b0 0%, #6dd5ed 100%);
+            color: white;
+            font-size: 0.9rem;
         }
 
         .badge:hover {
-            transform: translateY(-3px) scale(1.1);
-            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(33, 147, 176, 0.3);
         }
 
         .bg-info {
@@ -328,19 +353,23 @@
         }
 
         .bg-light {
-            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%) !important;
+            background: linear-gradient(135deg, #f0f4f8 0%, #e9ecef 100%) !important;
         }
 
         .text-dark {
-            color: #2193b0 !important;
+            color: #2c3e50 !important;
+            font-weight: 600;
         }
 
         /* List Styles */
         .list-unstyled li {
-            padding: 10px 0;
+            padding: 12px 0;
             border-bottom: 1px solid rgba(33, 147, 176, 0.1);
             transition: all 0.3s ease;
-            animation: fadeInUp 0.6s ease-out backwards;
+            animation: fadeInUp 0.5s ease-out backwards;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
 
         .list-unstyled li:last-child {
@@ -348,18 +377,18 @@
         }
 
         .list-unstyled li:hover {
-            padding-left: 10px;
+            padding-left: 8px;
             background: linear-gradient(90deg, rgba(33, 147, 176, 0.05) 0%, transparent 100%);
-            border-radius: 8px;
+            border-radius: 4px;
         }
 
         /* Staggered animation for list items */
         .list-unstyled li:nth-child(1) { animation-delay: 0.1s; }
-        .list-unstyled li:nth-child(2) { animation-delay: 0.2s; }
-        .list-unstyled li:nth-child(3) { animation-delay: 0.3s; }
-        .list-unstyled li:nth-child(4) { animation-delay: 0.4s; }
-        .list-unstyled li:nth-child(5) { animation-delay: 0.5s; }
-        .list-unstyled li:nth-child(n+6) { animation-delay: 0.6s; }
+        .list-unstyled li:nth-child(2) { animation-delay: 0.15s; }
+        .list-unstyled li:nth-child(3) { animation-delay: 0.2s; }
+        .list-unstyled li:nth-child(4) { animation-delay: 0.25s; }
+        .list-unstyled li:nth-child(5) { animation-delay: 0.3s; }
+        .list-unstyled li:nth-child(n+6) { animation-delay: 0.35s; }
 
         /* Column Animations */
         .col-md-6:first-child {
@@ -372,9 +401,9 @@
 
         /* Alert Styles */
         .alert-info {
-            background: rgba(255, 255, 255, 0.95);
+            background: rgba(255, 255, 255, 0.98);
             border: 2px solid #2193b0;
-            border-radius: 15px;
+            border-radius: 12px;
             color: #2193b0;
             font-weight: 500;
             animation: fadeInUp 0.8s ease-out;
@@ -394,6 +423,7 @@
             content: '→';
             margin-left: 5px;
             transition: all 0.3s ease;
+            display: inline-block;
         }
 
         .alert-link:hover {
@@ -403,6 +433,103 @@
 
         .alert-link:hover::after {
             margin-left: 10px;
+            transform: translateX(3px);
+        }
+
+        /* Speech Link Styles */
+        .speech-link {
+            color: #2193b0;
+            cursor: pointer;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .speech-link:hover {
+            color: #6dd5ed;
+            text-decoration: underline;
+        }
+
+        .speech-link::before {
+            content: '🎙️ ';
+            margin-right: 5px;
+        }
+
+        /* Modal Styles */
+        .modal-content {
+            border-radius: 15px;
+            background: rgba(255, 255, 255, 0.98);
+            border: none;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .modal-header {
+            background: linear-gradient(135deg, #2193b0 0%, #6dd5ed 100%);
+            color: white;
+            border-radius: 15px 15px 0 0;
+            border: none;
+            padding: 20px 25px;
+        }
+
+        .modal-title {
+            font-weight: 700;
+            font-size: 1.3rem;
+        }
+
+        .btn-close {
+            filter: brightness(0) invert(1);
+            opacity: 0.8;
+        }
+
+        .btn-close:hover {
+            opacity: 1;
+        }
+
+        .modal-body {
+            padding: 25px;
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+
+        /* Speech Card in Modal */
+        .modal-body .card {
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(33, 147, 176, 0.2);
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .modal-body .card:hover {
+            box-shadow: 0 6px 20px rgba(33, 147, 176, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .modal-body .card-header {
+            background: linear-gradient(135deg, #2193b0 0%, #6dd5ed 100%);
+            color: white;
+            font-weight: 600;
+            padding: 15px 20px;
+            border-radius: 10px 10px 0 0;
+        }
+
+        .modal-body .card-body {
+            padding: 20px;
+        }
+
+        .modal-body .card-body p {
+            margin-bottom: 12px;
+            line-height: 1.6;
+        }
+
+        .modal-body .card-body strong {
+            color: #2193b0;
+        }
+
+        .modal-body .badge {
+            font-size: 1rem;
+            padding: 8px 14px;
         }
 
         /* Row Styles */
@@ -412,7 +539,11 @@
 
         /* Float End Animation */
         .float-end {
-            animation: float 3s ease-in-out infinite;
+            transition: all 0.3s ease;
+        }
+
+        .result-card:hover .float-end {
+            transform: translateX(-5px);
         }
 
         /* Scrollbar Styling */
@@ -456,13 +587,16 @@
             }
 
             .score-badge {
-                font-size: 0.9rem;
-                padding: 0.4em 0.8em;
+                font-size: 0.95rem;
+                padding: 0.5em 0.8em;
             }
 
             .card-header {
                 font-size: 0.95rem;
                 padding: 15px;
+                flex-direction: column;
+                gap: 10px;
+                align-items: flex-start;
             }
 
             .card-body {
@@ -472,22 +606,20 @@
             .navbar-brand {
                 font-size: 1.2rem;
             }
+
+            .float-end {
+                float: none !important;
+            }
+
+            .result-card:hover {
+                transform: translateX(4px);
+            }
         }
 
-        /* Enhance container positioning */
+        /* Container positioning */
         .container-fluid {
             position: relative;
             z-index: 1;
-        }
-
-        /* Additional hover effects for interactivity */
-        .card-header:hover {
-            background: linear-gradient(135deg, #1a7a94 0%, #5bc5d9 100%);
-        }
-
-        /* Smooth transitions for all elements */
-        * {
-            transition: background-color 0.3s ease, color 0.3s ease;
         }
     </style>
 </head>
@@ -495,11 +627,14 @@
     
     <nav class="navbar navbar-expand-lg navbar-dark header-bg">
         <div class="container-fluid">
-            <a class="navbar-brand" href="{% url 'home' %}">Home</a>
+            <a class="navbar-brand" href="{% url 'home' %}">Interview Analyzer</a>
             <div class="collapse navbar-collapse justify-content-end">
                 <ul class="navbar-nav">
                     <li class="nav-item">
                         <a class="nav-link active" href="{% url 'candidate_history' %}">History Tracker</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'report_generator_self' %}">Report Generator</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'logout' %}">Logout</a>
@@ -508,38 +643,74 @@
             </div>
         </div>
     </nav>
+
     <div class="container history-container">
-        <h1 class="mb-4">My Interview Performance History</h1>
-        <p class="lead">Viewing results for: **{{ candidate.name }}**</p>
+        <h1 class="mb-4">📊 My Interview Performance History</h1>
+        <p class="lead">Viewing results for: <strong>{{ candidate.name }}</strong></p>
 
         {% if analysis_results %}
             <div class="row">
             {% for result in analysis_results %}
                 <div class="col-md-12">
                     <div class="card result-card">
-                        <div class="card-header header-bg">
-                            **Analysis Run on:** {{ result.date_time|date:"F d, Y P" }}
-                            <span class="float-end">Overall Score: <span class="badge bg-light text-dark score-badge">{{ result.overall_confidence|floatformat:2 }}%</span></span>
+                        <div class="card-header">
+                            <div>📅 Analysis Run on: <strong>{{ result.date_time|date:"F d, Y - P" }}</strong></div>
+                            <div class="float-end">
+                                Overall Score: <span class="badge score-badge">{{ result.overall_confidence|floatformat:2 }}%</span>
+                            </div>
                         </div>
                         <div class="card-body">
                             <div class="row">
                                 <div class="col-md-6">
-                                    <h5>Component Scores:</h5>
+                                    <h5>📈 Component Scores</h5>
                                     <ul class="list-unstyled">
-                                        <li>**Facial Expression:** <span class="badge bg-info">{{ result.expression_confidence|floatformat:2 }}%</span></li>
-                                        <li>**Eye Movement:** <span class="badge bg-info">{{ result.eye_movement_confidence|floatformat:2 }}%</span></li>
-                                        <li>**Speech:** <span class="badge bg-info">{{ result.speech_confidence|floatformat:2 }}%</span></li>
-                                        <li>**Hand Gesture:** <span class="badge bg-info">{{ result.hand_gesture_confidence|floatformat:2 }}%</span></li>
+                                        <li>
+                                            <span>Facial Expression</span>
+                                            <span class="badge">{{ result.expression_confidence|floatformat:2 }}%</span>
+                                        </li>
+                                        <li>
+                                            <span>Eye Movement</span>
+                                            <span class="badge">{{ result.eye_movement_confidence|floatformat:2 }}%</span>
+                                        </li>
+                                        <li>
+                                            <span>Speech Quality</span>
+                                            <span class="badge">{{ result.speech_confidence|floatformat:2 }}%</span>
+                                        </li>
+                                        <li>
+                                            <span>Hand Gestures</span>
+                                            <span class="badge">{{ result.hand_gesture_confidence|floatformat:2 }}%</span>
+                                        </li>
                                     </ul>
+                                    
+                                    <!-- Speech Q&A Section -->
+                                    <h5 style="margin-top: 25px;">🎙️ Speech Analysis</h5>
+                                    <ul class="list-unstyled small">
+                                        <li>
+                                            <span><a class="speech-link" data-result="{{ result.id }}">View Q&A Details</a></span>
+                                            <span class="badge">
+                                                {% with qa_list=result.speech_details|safe %}
+                                                    {% if qa_list != "[]" %}View{% else %}None{% endif %}
+                                                {% endwith %}
+                                            </span>
+                                        </li>
+                                    </ul>
+
+                                    <!-- Hidden JSON for Speech Data -->
+                                    <script id="speechJSON-{{ result.id }}" type="application/json">
+                                        {{ result.speech_details|safe }}
+                                    </script>
                                 </div>
                                 <div class="col-md-6">
-                                    <h5>Detailed Expression Duration (Seconds):</h5>
+                                    <h5>⏱️ Expression Duration</h5>
                                     <ul class="list-unstyled small">
                                     {% with expressions=result.get_detailed_results.expression_seconds %}
                                         {% for expr, duration in expressions.items %}
-                                            <li>{{ expr|title }}: **{{ duration }}s**</li>
+                                            <li>
+                                                <span>{{ expr|title }}</span>
+                                                <span class="badge bg-light text-dark">{{ duration }}s</span>
+                                            </li>
                                         {% empty %}
-                                            <li>No detailed expression data recorded.</li>
+                                            <li><em>No detailed expression data recorded.</em></li>
                                         {% endfor %}
                                     {% endwith %}
                                     </ul>
@@ -552,12 +723,82 @@
             </div>
         {% else %}
             <div class="alert alert-info mt-5">
+                <strong>ℹ️ No Analysis Records Yet</strong><br>
                 You have not submitted any videos for analysis yet.
                 <a href="{% url 'home' %}" class="alert-link">Go back to the home page</a> to upload your first video.
             </div>
         {% endif %}
     </div>
 
+    <!-- Speech Modal -->
+    <div class="modal fade" id="speechModal" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">🎙️ Speech Analysis</h5>
+                    <button class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="speech-modal-body"></div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+    document.addEventListener("DOMContentLoaded", function () {
+
+        /* Speech Modal Logic */
+        document.querySelectorAll(".speech-link").forEach(link => {
+            link.addEventListener("click", function(e) {
+                e.preventDefault();
+
+                let id = this.dataset.result;
+                let jsonEl = document.getElementById("speechJSON-" + id);
+
+                if (!jsonEl) {
+                    alert("Speech JSON not found for ID " + id);
+                    return;
+                }
+
+                let qaList;
+                try {
+                    qaList = JSON.parse(jsonEl.textContent.trim());
+                } catch(err) {
+                    console.error("Invalid speech JSON for ID " + id, err);
+                    alert("Speech data is corrupted.");
+                    return;
+                }
+
+                let modalBody = document.getElementById("speech-modal-body");
+                modalBody.innerHTML = "";
+
+                if (!qaList || qaList.length === 0) {
+                    modalBody.innerHTML = "<p class='text-center text-muted'>No speech Q&A detected.</p>";
+                } else {
+                    qaList.forEach((qa, i) => {
+                        modalBody.innerHTML += `
+                            <div class="card mb-3">
+                                <div class="card-header">
+                                    <strong>Question ${i+1}</strong>
+                                </div>
+                                <div class="card-body">
+                                    <p><strong>❓ Q:</strong> ${qa.question}</p>
+                                    <p><strong>✅ A:</strong> ${qa.answer}</p>
+                                    <p><strong>📊 Score:</strong> <span class="badge bg-primary">${qa.score}%</span></p>
+                                    ${ qa.explanation ? `<p><strong>💡 Explanation:</strong> ${qa.explanation}</p>` : "" }
+                                </div>
+                            </div>
+                        `;
+                    });
+                }
+
+                new bootstrap.Modal(document.getElementById("speechModal")).show();
+            });
+        });
+
+    });
+    </script>
+
 </body>
 </html>

@@ -1,75 +1,411 @@
 {% load tz %}
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <title>{{ candidate.name }} - Performance | Admin</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-
     <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
-            font-family: 'Segoe UI';
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 20% 50%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(255, 255, 255, 0.1) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
         }
 
         .performance-container { 
-            padding: 50px; 
+            padding: 40px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .navbar {
+            background: linear-gradient(135deg, #2193b0 0%, #6dd5ed 100%) !important;
+            box-shadow: 0 4px 20px rgba(33, 147, 176, 0.4);
+        }
+
+        .navbar-brand {
+            font-weight: 700;
+            font-size: 1.5rem;
+        }
+
+        .nav-link {
+            transition: all 0.3s ease;
+        }
+
+        .nav-link:hover {
+            transform: translateY(-2px);
+        }
+
+        .back-btn {
+            background: linear-gradient(135deg, #f0f4f8 0%, #e9ecef 100%);
+            border: 2px solid #2193b0;
+            color: #2193b0;
+            font-weight: 600;
+            border-radius: 8px;
+            padding: 10px 20px;
+            transition: all 0.3s ease;
+            animation: fadeInLeft 0.6s ease-out;
+            text-decoration: none;
+            display: inline-block;
+            margin-bottom: 20px;
+        }
+
+        .back-btn:hover {
+            background: linear-gradient(135deg, #2193b0 0%, #6dd5ed 100%);
+            color: white;
+            transform: translateX(-3px);
+        }
+
+        @keyframes fadeInLeft {
+            from { opacity: 0; transform: translateX(-20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        h1 {
+            color: white;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+            animation: slideInLeft 0.8s ease-out;
+            font-weight: 700;
+            margin-top: 20px;
+        }
+
+        @keyframes slideInLeft {
+            from { opacity: 0; transform: translateX(-50px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .lead {
+            color: white;
+            text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.2);
+            animation: fadeInUp 0.8s ease-out 0.2s both;
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        h3 {
+            color: white;
+            margin-top: 40px;
+            margin-bottom: 20px;
+            font-weight: 700;
+            animation: slideInLeft 0.8s ease-out 0.3s both;
         }
 
         .result-card {
-            border-radius: 18px;
-            background: rgba(255,255,255,0.97);
-            margin-bottom: 30px;
-            padding-bottom: 10px;
-            box-shadow: 0 10px 35px rgba(0,0,0,0.20);
-            transition: 0.25s;
+            border-radius: 15px;
+            background: rgba(255, 255, 255, 0.98);
+            margin-bottom: 25px;
+            overflow: hidden;
+            box-shadow: 0 10px 35px rgba(0, 0, 0, 0.15);
+            transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+            animation: cardSlideIn 0.6s ease-out backwards;
+            border-left: 4px solid #2193b0;
+            position: relative;
         }
 
+        @keyframes cardSlideIn {
+            from { opacity: 0; transform: translateX(-30px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .result-card:nth-child(1) { animation-delay: 0.1s; }
+        .result-card:nth-child(2) { animation-delay: 0.2s; }
+        .result-card:nth-child(3) { animation-delay: 0.3s; }
+        .result-card:nth-child(n+4) { animation-delay: 0.4s; }
+
         .result-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 14px 45px rgba(0,0,0,0.25);
+            transform: translateY(-8px);
+            box-shadow: 0 15px 45px rgba(33, 147, 176, 0.2);
+            border-left-color: #6dd5ed;
+        }
+
+        .result-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(33, 147, 176, 0.05), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .result-card:hover::before {
+            left: 100%;
         }
 
         .card-header {
-            background: #eef2ff;
-            padding: 18px;
-            font-size: 18px;
+            background: linear-gradient(135deg, #2193b0 0%, #6dd5ed 100%);
+            padding: 20px;
+            font-size: 16px;
             font-weight: 600;
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
 
         .card-body {
             padding: 25px;
+            position: relative;
+            z-index: 1;
         }
 
-        h5 {
-            margin-top: 20px;
-            color: #5a67d8;
+        .results-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .result-box {
+            background: linear-gradient(135deg, #f0f4f8 0%, #e9ecef 100%);
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+            animation: boxFadeIn 0.5s ease-out backwards;
+        }
+
+        @keyframes boxFadeIn {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .result-box:nth-child(1) { animation-delay: 0.1s; }
+        .result-box:nth-child(2) { animation-delay: 0.15s; }
+        .result-box:nth-child(3) { animation-delay: 0.2s; }
+        .result-box:nth-child(4) { animation-delay: 0.25s; }
+
+        .result-box:hover {
+            border-color: #2193b0;
+            background: linear-gradient(135deg, #e0e7f1 0%, #d9dfe6 100%);
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(33, 147, 176, 0.2);
+        }
+
+        .result-box h6 {
+            color: #555;
+            font-weight: 600;
+            margin-bottom: 10px;
+            font-size: 0.9rem;
+        }
+
+        .result-box .percentage {
+            font-size: 2rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #2193b0 0%, #6dd5ed 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: numberCountUp 1s ease-out;
+        }
+
+        @keyframes numberCountUp {
+            from { opacity: 0; transform: scale(0.5); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .overall-score {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 12px;
+            text-align: center;
+            margin: 20px 0;
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+            animation: scaleIn 0.6s ease-out;
+        }
+
+        @keyframes scaleIn {
+            from { opacity: 0; transform: scale(0.8); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .overall-score h4 {
+            margin-bottom: 10px;
             font-weight: 600;
         }
 
-        .speech-link {
-            color: #1e40af;
-            cursor: pointer;
-            text-decoration: none;
+        .overall-score .score-value {
+            font-size: 3rem;
+            font-weight: 700;
+            animation: floatIn 0.8s ease-out;
         }
-        .speech-link:hover {
-            text-decoration: underline;
+
+        @keyframes floatIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        h5 {
+            color: #2193b0;
+            font-weight: 700;
+            margin: 20px 0 15px 0;
+            position: relative;
+            padding-bottom: 10px;
+            animation: fadeInLeft 0.5s ease-out;
+        }
+
+        h5::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 40px;
+            height: 3px;
+            background: linear-gradient(90deg, #2193b0, #6dd5ed);
+            border-radius: 2px;
+        }
+
+        .list-unstyled {
+            animation: listFadeIn 0.6s ease-out;
+        }
+
+        @keyframes listFadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .list-unstyled li {
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(33, 147, 176, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s ease;
+            animation: rowSlideIn 0.5s ease-out backwards;
+        }
+
+        @keyframes rowSlideIn {
+            from { opacity: 0; transform: translateX(-20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .list-unstyled li:nth-child(1) { animation-delay: 0.1s; }
+        .list-unstyled li:nth-child(2) { animation-delay: 0.15s; }
+        .list-unstyled li:nth-child(3) { animation-delay: 0.2s; }
+        .list-unstyled li:nth-child(4) { animation-delay: 0.25s; }
+
+        .list-unstyled li:last-child {
+            border-bottom: none;
+        }
+
+        .list-unstyled li:hover {
+            padding-left: 10px;
+            background: linear-gradient(90deg, rgba(33, 147, 176, 0.05) 0%, transparent 100%);
+            border-radius: 4px;
         }
 
         .badge {
-            font-size: 1rem;
+            font-size: 0.95rem;
             padding: 8px 14px;
+            border-radius: 6px;
+            background: linear-gradient(135deg, #2193b0 0%, #6dd5ed 100%);
+            color: white;
+            font-weight: 600;
+            animation: badgeScale 0.4s ease-out;
         }
 
-        /* Modal styling */
+        @keyframes badgeScale {
+            from { transform: scale(0); }
+            50% { transform: scale(1.15); }
+            to { transform: scale(1); }
+        }
+
+        .small {
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .alert {
+            border-radius: 12px;
+            border: none;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            animation: slideDown 0.5s ease-out;
+        }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .alert-warning {
+            background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+            border-left: 4px solid #ffc107;
+        }
+
+        .speech-link {
+            color: #2193b0;
+            cursor: pointer;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .speech-link:hover {
+            color: #6dd5ed;
+            text-decoration: underline;
+        }
+
         .modal-content {
             border-radius: 15px;
-            padding: 10px;
+            background: rgba(255, 255, 255, 0.98);
         }
 
-        #speech-modal-body .card {
-            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
-            border-radius: 12px;
+        .modal-header {
+            background: linear-gradient(135deg, #2193b0 0%, #6dd5ed 100%);
+            color: white;
+            border-radius: 15px 15px 0 0;
+        }
+
+        @media (max-width: 768px) {
+            .performance-container {
+                padding: 20px;
+            }
+
+            .results-grid {
+                grid-template-columns: 1fr;
+            }
+
+            h1 {
+                font-size: 1.8rem;
+            }
+
+            .overall-score .score-value {
+                font-size: 2.5rem;
+            }
+
+            .card-header {
+                flex-direction: column;
+                gap: 10px;
+                align-items: flex-start;
+            }
         }
     </style>
 </head>
@@ -77,28 +413,26 @@
 <body>
 
 <!-- NAVBAR -->
-<nav class="navbar navbar-expand-lg navbar-dark" style="background-color:#2193b0;">
+<nav class="navbar navbar-expand-lg navbar-dark">
     <div class="container-fluid">
-        <a class="navbar-brand" href="/admin-dashboard">Admin Dashboard</a>
+        <a class="navbar-brand" href="/admin-dashboard">🏢 Admin Dashboard</a>
         <div class="collapse navbar-collapse justify-content-end">
             <ul class="navbar-nav">
-                <li class="nav-item"><a class="nav-link" href="/logout">Logout</a></li>
+                <li class="nav-item"><a class="nav-link" href="/logout">🚪 Logout</a></li>
             </ul>
         </div>
     </div>
 </nav>
 
-
 <!-- PAGE CONTAINER -->
 <div class="container performance-container">
 
-    <a href="/admin-dashboard" class="btn btn-light mb-4 shadow-sm">&larr; Back</a>
+    <a href="/admin-dashboard" class="back-btn">&larr; Back to Dashboard</a>
 
-    <h1 class="mb-2 text-white"><strong>{{ candidate.name }}</strong></h1>
-    <p class="lead text-white">Email: {{ candidate.email }}</p>
+    <h1 class="mb-2">👤 {{ candidate.name }}</h1>
+    <p class="lead">📧 Email: <strong>{{ candidate.email }}</strong></p>
 
-    <h3 class="text-white mt-4 mb-3">Analysis History</h3>
-
+    <h3>📊 Analysis History</h3>
 
     {% if analysis_results %}
     <div class="row">
@@ -106,44 +440,78 @@
         {% for wrapper in analysis_results %}
         {% with result=wrapper.obj local_time=wrapper.local_time %}
 
-        <div class="col-md-6">
+        <div class="col-md-12">
             <div class="card result-card">
 
                 <div class="card-header">
-                    Analysis Run on: {{ local_time|date:"F d, Y h:i A" }}
+                    <div>📅 Analysis Run on: <strong>{{ local_time|date:"F d, Y - h:i A" }}</strong></div>
                 </div>
 
                 <div class="card-body">
 
-                    <p>
-                        <strong>Overall Confidence:</strong>
-                        <span class="badge bg-primary">{{ result.overall_confidence|floatformat:2 }}%</span>
-                    </p>
+                    <!-- Overall Score -->
+                    <div class="overall-score">
+                        <h4>🎯 Overall Confidence Score</h4>
+                        <div class="score-value">{{ result.overall_confidence|floatformat:2 }}%</div>
+                    </div>
 
-                    <h5>Aspect Scores</h5>
-                    <ul class="list-unstyled">
-                        <li><strong>Facial:</strong> {{ result.expression_confidence|floatformat:2 }}%</li>
+                    <!-- Component Scores in Boxes -->
+                    <h5>📊 Component Analysis</h5>
+                    <div class="results-grid">
+                        <div class="result-box">
+                            <h6>😐 Facial Expression</h6>
+                            <div class="percentage">{{ result.expression_confidence|floatformat:2 }}%</div>
+                        </div>
+                        <div class="result-box">
+                            <h6>👀 Eye Movement</h6>
+                            <div class="percentage">{{ result.eye_movement_confidence|floatformat:2 }}%</div>
+                        </div>
+                        <div class="result-box">
+                            <h6>🎤 Speech Quality</h6>
+                            <div class="percentage">{{ result.speech_confidence|floatformat:2 }}%</div>
+                        </div>
+                        <div class="result-box">
+                            <h6>🤝 Hand Gestures</h6>
+                            <div class="percentage">{{ result.hand_gesture_confidence|floatformat:2 }}%</div>
+                        </div>
+                    </div>
 
-                        <li>
-                            <strong><a class="speech-link" data-result="{{ result.id }}">Speech:</a></strong>
-                            {{ result.speech_confidence|floatformat:2 }}%
-                        </li>
-
-                        <li><strong>Eye Movement:</strong> {{ result.eye_movement_confidence|floatformat:2 }}%</li>
-                        <li><strong>Hand Gesture:</strong> {{ result.hand_gesture_confidence|floatformat:2 }}%</li>
+                    <!-- Expression Breakdown -->
+                    <h5>⏱️ Expression Duration Breakdown</h5>
+                    <ul class="list-unstyled small">
+                    {% with expressions=result.get_detailed_results.expression_seconds %}
+                        {% for expr, duration in expressions.items %}
+                            <li>
+                                <span>{{ expr|title }}</span>
+                                <span class="badge">{{ duration }}s</span>
+                            </li>
+                        {% empty %}
+                            <li><em>No detailed expression data recorded.</em></li>
+                        {% endfor %}
+                    {% endwith %}
                     </ul>
 
-                    <h5>Expression Durations</h5>
-                    <ul class="small" id="exp-list-{{ result.id }}"></ul>
+                    <!-- Speech Q&A -->
+                    <h5 style="margin-top: 25px;">🎙️ Speech Analysis</h5>
+                    <ul class="list-unstyled small">
+                        <li>
+                            <span><a class="speech-link" data-result="{{ result.id }}">View Q&A Details</a></span>
+                            <span class="badge">
+                                {% with qa_list=result.speech_details|safe %}
+                                    {% if qa_list != "[]" %}View{% else %}None{% endif %}
+                                {% endwith %}
+                            </span>
+                        </li>
+                    </ul>
 
-                    <!-- Expression JSON -->
-                    <script id="detailsJSON-{{ result.id }}" type="application/json">
-                        {{ result.detailed_results|safe }}
-                    </script>
-
-                    <!-- Speech JSON -->
+                    <!-- Hidden JSON for Speech Data -->
                     <script id="speechJSON-{{ result.id }}" type="application/json">
                         {{ result.speech_details|safe }}
+                    </script>
+
+                    <!-- Hidden JSON for Expression Data -->
+                    <script id="detailsJSON-{{ result.id }}" type="application/json">
+                        {{ result.detailed_results|safe }}
                     </script>
 
                 </div>
@@ -156,62 +524,33 @@
     </div>
 
     {% else %}
-        <div class="alert alert-warning">No analysis available.</div>
+        <div class="alert alert-warning" role="alert">
+            <h5 class="alert-heading">📭 No Analysis Records Yet</h5>
+            <p>No analysis available for this candidate. Upload a video or record a live interview to get started!</p>
+        </div>
     {% endif %}
+
 </div>
 
-
-<!-- ===================================== -->
-<!-- SPEECH MODAL -->
-<!-- ===================================== -->
+<!-- Speech Modal -->
 <div class="modal fade" id="speechModal" tabindex="-1">
   <div class="modal-dialog modal-lg modal-dialog-scrollable">
     <div class="modal-content">
-
       <div class="modal-header">
-        <h5 class="modal-title">Speech Analysis</h5>
+        <h5 class="modal-title">🎙️ Speech Q&A Analysis</h5>
         <button class="btn-close" data-bs-dismiss="modal"></button>
       </div>
-
       <div class="modal-body" id="speech-modal-body"></div>
-
     </div>
   </div>
 </div>
-
-
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
 document.addEventListener("DOMContentLoaded", function () {
 
-    /* ----------------------------------------
-       Load Expression Durations
-    ---------------------------------------- */
-    {% for wrapper in analysis_results %}
-    {% with result=wrapper.obj %}
-    try {
-        let rawJSON = document.getElementById("detailsJSON-{{ result.id }}").textContent.trim();
-        let data = JSON.parse(rawJSON);
-
-        let expr = data.expression_seconds || {};
-        let target = document.getElementById("exp-list-{{ result.id }}");
-        target.innerHTML = "";
-
-        Object.keys(expr).forEach(key => {
-            target.innerHTML += `<li>${key}: <strong>${expr[key]}s</strong></li>`;
-        });
-    } catch(e) {
-        console.error("Expression parse error for result {{ result.id }}:", e);
-    }
-    {% endwith %}
-    {% endfor %}
-
-
-    /* ----------------------------------------
-       Speech Modal Logic
-    ---------------------------------------- */
+    /* Speech Modal Logic */
     document.querySelectorAll(".speech-link").forEach(link => {
         link.addEventListener("click", function(e) {
             e.preventDefault();
@@ -236,18 +575,20 @@ document.addEventListener("DOMContentLoaded", function () {
             let modalBody = document.getElementById("speech-modal-body");
             modalBody.innerHTML = "";
 
-            if (!qaList.length) {
-                modalBody.innerHTML = "<p>No speech Q&A detected.</p>";
+            if (!qaList || qaList.length === 0) {
+                modalBody.innerHTML = "<p class='text-center text-muted'>No speech Q&A detected.</p>";
             } else {
                 qaList.forEach((qa, i) => {
                     modalBody.innerHTML += `
-                        <div class="card mb-3">
-                            <div class="card-header"><strong>Question ${i+1}</strong></div>
+                        <div class="card mb-3" style="border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+                            <div class="card-header" style="background: linear-gradient(135deg, #2193b0 0%, #6dd5ed 100%); color: white; font-weight: 600;">
+                                <strong>Question ${i+1}</strong>
+                            </div>
                             <div class="card-body">
-                                <p><strong>Q:</strong> ${qa.question}</p>
-                                <p><strong>A:</strong> ${qa.answer}</p>
-                                <p><strong>Score:</strong> ${qa.score}%</p>
-                                ${ qa.explanation ? `<p><strong>Explanation:</strong> ${qa.explanation}</p>` : "" }
+                                <p><strong>❓ Q:</strong> ${qa.question}</p>
+                                <p><strong>✅ A:</strong> ${qa.answer}</p>
+                                <p><strong>📊 Score:</strong> <span class="badge bg-primary">${qa.score}%</span></p>
+                                ${ qa.explanation ? `<p><strong>💡 Explanation:</strong> ${qa.explanation}</p>` : "" }
                             </div>
                         </div>
                     `;

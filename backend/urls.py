@@ -13,6 +13,7 @@ urlpatterns = [
     path('signup', views.signup_user, name='signup'),
     path('login', views.login_user, name='login'),
     path('logout', views.logout_user, name='logout'),
+    path('save-live-recording/<int:user_id>/', views.save_candidate_live_recording, name='save_candidate_live_recording'),
     
     # Candidate-Specific Paths
     path('history', views.candidate_history, name='candidate_history'),
