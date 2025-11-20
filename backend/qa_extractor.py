@@ -15,7 +15,7 @@ def call_ollama(prompt: str):
             'prompt': prompt,
             'stream': False
         },
-        timeout=30
+        timeout=300
     )
     result = response.json()
     return result.get('response', '[]')

@@ -574,7 +574,7 @@ function uploadLiveRecording() {
 
     const userId = "{{ request.session.user_id }}";
 
-    fetch(`/save-live-recording/${userId}/`, {
+    fetch(`/save-candidate-live-recording/${userId}/`, {
         method: "POST",
         body: formData
     })
